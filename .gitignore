@@ -1,0 +1,8 @@
+
+agy.exe
+
+.env
+__pycache__/
+*.py[cod]
+.venv/
+.agents/
