@@ -2,9 +2,9 @@ services:
   # 1. TimescaleDB (Bypass no Postgres padrão do Render para ter as funções de IoT)
   - type: pserv
     name: agrotrace-db
-    env: docker
+    env: image
     image:
-      imagePath: timescale/timescaledb:latest-pg15
+      url: timescale/timescaledb:latest-pg15
     disk:
       name: timescaledb-data
       mountPath: /var/lib/postgresql/data
