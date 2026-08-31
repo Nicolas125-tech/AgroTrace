@@ -1,0 +1,64 @@
+services:
+  # 1. TimescaleDB (Bypass no Postgres padrão do Render para ter as funções de IoT)
+  - type: pserv
+    name: agrotrace-db
+    env: docker
+    image:
+      url: timescale/timescaledb:latest-pg15
+    disk:
+      name: timescaledb-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+    envVars:
+      - key: POSTGRES_USER
+        value: agrotrace
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: POSTGRES_DB
+        value: agrotrace
+
+  # 2. Broker MQTT (Mosquitto)
+  - type: pserv
+    name: agrotrace-mqtt
+    env: docker
+    dockerfilePath: Dockerfile.mosquitto
+
+  # 3. Backend (FastAPI)
+  - type: web
+    name: agrotrace-api
+    env: docker
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: POSTGRES_PASSWORD
+        fromService:
+          type: pserv
+          name: agrotrace-db
+          envVarKey: POSTGRES_PASSWORD
+      - key: POSTGRES_HOST
+        value: agrotrace-db
+      - key: POSTGRES_USER
+        value: agrotrace
+      - key: POSTGRES_DB
+        value: agrotrace
+      - key: POSTGRES_PORT
+        value: "5432"
+      - key: MQTT_BROKER
+        value: agrotrace-mqtt
+      - key: MQTT_PORT
+        value: "1883"
+      - key: SECRET_KEY
+        generateValue: true
+
+  # 4. Painel Web (Next.js)
+  - type: web
+    name: agrotrace-dashboard
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    rootDir: frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: agrotrace-api
+          envVarKey: RENDER_EXTERNAL_URL

@@ -1,0 +1,7 @@
+FROM eclipse-mosquitto:latest
+
+# Copia a configuração rígida do nosso projeto para habilitar conexões e WebSockets
+COPY mosquitto/config/mosquitto.conf /mosquitto/config/mosquitto.conf
+
+EXPOSE 1883
+EXPOSE 9001
