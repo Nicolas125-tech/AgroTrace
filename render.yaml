@@ -4,7 +4,7 @@ services:
     name: agrotrace-db
     env: docker
     image:
-      url: timescale/timescaledb:latest-pg15
+      imagePath: timescale/timescaledb:latest-pg15
     disk:
       name: timescaledb-data
       mountPath: /var/lib/postgresql/data
