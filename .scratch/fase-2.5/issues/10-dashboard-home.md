@@ -4,8 +4,8 @@
 
 **Blocked by:** 09: Endpoint de listagem de remessas
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Criar página inicial (`/`) no diretório do frontend.
-- [ ] Fazer chamada ao endpoint de listagem de remessas e exibir os dados (em lista/tabela).
-- [ ] Integrar componente de mapa exibindo marcadores das remessas ativas.
+- [x] Criar página inicial (`/`) no diretório do frontend.
+- [x] Fazer chamada ao endpoint de listagem de remessas e exibir os dados (em lista/tabela).
+- [x] Integrar componente de mapa exibindo marcadores das remessas ativas.
