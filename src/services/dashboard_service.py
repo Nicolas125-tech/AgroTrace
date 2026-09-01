@@ -5,15 +5,19 @@ from src.domain.models import CargoProfile, CustodyTransfer, Shipment, Telemetry
 
 
 def get_shipment_details(db: Session, shipment_id: int):
-    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
-    if not shipment:
+    stmt = (
+        db.query(Shipment, CargoProfile, CustodyTransfer)
+        .join(CargoProfile, CargoProfile.id == Shipment.profile_id)
+        .outerjoin(CustodyTransfer, CustodyTransfer.shipment_id == Shipment.id)
+        .filter(Shipment.id == shipment_id)
+        .order_by(CustodyTransfer.id.desc())
+        .first()
+    )
+
+    if not stmt:
         return None
         
-    profile = db.query(CargoProfile).filter(CargoProfile.id == shipment.profile_id).first()
-    
-    active_custody = db.query(CustodyTransfer).filter(
-        CustodyTransfer.shipment_id == shipment_id
-    ).order_by(CustodyTransfer.id.desc()).first()
+    shipment, profile, active_custody = stmt
     
     return {
         "id": shipment.id,
