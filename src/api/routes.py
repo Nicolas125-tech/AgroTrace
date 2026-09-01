@@ -71,7 +71,7 @@ def public_handshake_view(token: str, db: Session = Depends(get_db)):
         
     # Injetando o Tenant do Token para o RLS liberar a leitura pública sem login do motorista
     from sqlalchemy import text
-    db.execute(text(f"SET LOCAL app.current_tenant = {tenant_id}"))
+    db.execute(text("SELECT set_config('app.current_tenant', :tenant_id, true)"), {"tenant_id": str(tenant_id)})
     
     shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
     if not shipment:
@@ -103,7 +103,7 @@ def public_handshake_action(token: str, payload: EphemeralDriverPayload, db: Ses
         
     # Injetando Tenant Context (RLS Bypass for action)
     from sqlalchemy import text
-    db.execute(text(f"SET LOCAL app.current_tenant = {tenant_id}"))
+    db.execute(text("SELECT set_config('app.current_tenant', :tenant_id, true)"), {"tenant_id": str(tenant_id)})
     
     from src.services.custody_service import initiate_transfer
     try:
