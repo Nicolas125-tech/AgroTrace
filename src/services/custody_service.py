@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
-from typing import List
+
 from sqlalchemy.orm import Session
-from src.domain.models import Shipment, CustodyTransfer, ShipmentStatus, CustodyStatus
+
+from src.domain.models import CustodyStatus, CustodyTransfer, Shipment, ShipmentStatus
+
 
 def initiate_transfer(db: Session, shipment_id: int, driver_cpf: str = None, driver_name: str = None, vehicle_plate: str = None, offline_timestamp: datetime = None) -> CustodyTransfer:
     """
@@ -53,7 +55,7 @@ def process_fast_path_handshake(db: Session, shipment_id: int, has_breached: boo
     db.refresh(transfer)
     return transfer
 
-def timeout_pending_transfers(db: Session, timeout_hours: int = 24) -> List[CustodyTransfer]:
+def timeout_pending_transfers(db: Session, timeout_hours: int = 24) -> list[CustodyTransfer]:
     """
     Cron job logic: finds PENDING_SYNC > 24h and moves them to QUARANTINED.
     """

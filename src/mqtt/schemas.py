@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class HandshakePayload(BaseModel):
     shipment_id: int
@@ -7,14 +9,14 @@ class HandshakePayload(BaseModel):
     has_breached: bool
     timestamp: datetime
 
-from typing import List, Optional
+
 
 class TelemetryReading(BaseModel):
     timestamp: datetime
     temperature: int
-    humidity: Optional[int] = None
-    gps: Optional[str] = None
+    humidity: int | None = None
+    gps: str | None = None
 
 class TelemetryBatchPayload(BaseModel):
     shipment_id: int
-    readings: List[TelemetryReading]
+    readings: list[TelemetryReading]

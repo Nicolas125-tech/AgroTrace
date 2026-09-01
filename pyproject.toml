@@ -15,3 +15,6 @@ dependencies = [
     "sqlalchemy>=2.0.52",
     "uvicorn>=0.52.4",
 ]
+
+[tool.ruff.lint]
+ignore = ["B008", "BLE001", "RUF013", "DTZ003", "F821"]

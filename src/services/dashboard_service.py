@@ -1,6 +1,8 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from src.domain.models import Shipment, CargoProfile, CustodyTransfer, Telemetry
+
+from src.domain.models import CargoProfile, CustodyTransfer, Shipment, Telemetry
+
 
 def get_shipment_details(db: Session, shipment_id: int):
     shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()

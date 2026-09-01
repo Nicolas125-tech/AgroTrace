@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+
 from src.api.routes import router
 from src.db.session import engine
 from src.domain.models import Base
