@@ -7,7 +7,7 @@ from src.services.custody_service import initiate_transfer, resolve_quarantined_
 
 router = APIRouter()
 
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 
 security = HTTPBearer()
@@ -32,8 +32,10 @@ def scan_qr_code(id: int, db: Session = Depends(get_authenticated_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 from pydantic import BaseModel
-from src.core.security import verify_password, generate_tenant_token
+
+from src.core.security import generate_tenant_token, verify_password
 from src.domain.models import Tenant
+
 
 class LoginRequest(BaseModel):
     username: str
@@ -56,8 +58,9 @@ def resolve_quarantined(transfer_id: int, force_status: CustodyStatus, db: Sessi
         return {"status": "success", "new_status": transfer.status}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-from typing import List
+
 from src.domain.models import ShipmentStatus
+
 
 class ShipmentListItemView(BaseModel):
     id: int
@@ -66,7 +69,7 @@ class ShipmentListItemView(BaseModel):
     profile_id: int
     grace_period_hours: int
 
-@router.get("/api/shipments", response_model=List[ShipmentListItemView])
+@router.get("/api/shipments", response_model=list[ShipmentListItemView])
 def list_shipments(
     status: ShipmentStatus | None = None,
     limit: int = 50,

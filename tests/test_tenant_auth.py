@@ -1,7 +1,8 @@
 from fastapi.testclient import TestClient
+
 from main import app
-from src.domain.models import Tenant, TenantRole
 from src.core.security import get_password_hash
+from src.domain.models import Tenant, TenantRole
 
 client = TestClient(app)
 
