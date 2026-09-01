@@ -1,3 +1,6 @@
+import os
+os.environ['SECRET_KEY'] = 'test-secret-key-123'
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

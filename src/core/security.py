@@ -2,7 +2,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from src.core.config import settings
 
 # Em produção, a secret key vem do vault/ambiente
-SECRET_KEY = getattr(settings, 'SECRET_KEY', 'agrotrace-super-secret-key-123')
+SECRET_KEY = settings.SECRET_KEY
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 def generate_signed_token(shipment_id: int, tenant_id: int) -> str:

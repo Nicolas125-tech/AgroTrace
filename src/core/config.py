@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
+    SECRET_KEY: str
     POSTGRES_USER: str = "agrotrace"
     POSTGRES_PASSWORD: str = "agrotrace_dev"
     POSTGRES_DB: str = "agrotrace"
