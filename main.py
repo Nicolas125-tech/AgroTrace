@@ -1,10 +1,17 @@
+import os
+
 from fastapi import FastAPI
+
 from src.api.routes import router
 from src.db.session import engine
 from src.domain.models import Base
 
 # Criando as tabelas no TimescaleDB (apenas para dev; futuramente usar Alembic)
-Base.metadata.create_all(bind=engine)
+try:
+    if os.getenv("TESTING") != "true":
+        Base.metadata.create_all(bind=engine)
+except Exception:
+    pass
 
 app = FastAPI(title="AgroTrace API")
 

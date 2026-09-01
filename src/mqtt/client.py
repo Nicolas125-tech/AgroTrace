@@ -1,5 +1,7 @@
-import paho.mqtt.client as mqtt
 import logging
+
+import paho.mqtt.client as mqtt
+
 from src.mqtt.handler import process_handshake_message
 
 logger = logging.getLogger(__name__)
@@ -8,6 +10,7 @@ logger.setLevel(logging.INFO)
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
 HANDSHAKE_TOPIC = "agrotrace/handshake"
+TELEMETRY_TOPIC = "agrotrace/telemetry"
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
