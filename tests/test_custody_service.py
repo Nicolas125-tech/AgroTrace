@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime
 
 from src.domain.models import (
@@ -54,3 +55,8 @@ def test_telemetry_insert_hypertable(db_session):
     db_session.commit()
     
     assert db_session.query(Telemetry).count() > 0
+
+
+def test_initiate_transfer_invalid_shipment(db_session):
+    with pytest.raises(ValueError, match="Shipment not found"):
+        initiate_transfer(db_session, shipment_id=999)
