@@ -1,11 +1,13 @@
-import pytest
-import time
 import json
+import time
 from datetime import datetime
-import paho.mqtt.publish as publish
-from src.domain.models import Shipment, CargoProfile, Telemetry
-from src.mqtt.client import MQTT_BROKER, MQTT_PORT, TELEMETRY_TOPIC
+
+from paho.mqtt import publish
+
 from src.db.session import SessionLocal
+from src.domain.models import CargoProfile, Shipment, Telemetry
+from src.mqtt.client import HANDSHAKE_TOPIC, MQTT_BROKER, MQTT_PORT
+
 
 def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
     # Setup test data
@@ -36,7 +38,7 @@ def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
         ]
     }
     
-    publish.single(TELEMETRY_TOPIC, payload=json.dumps(payload), hostname=MQTT_BROKER, port=MQTT_PORT)
+    publish.single(HANDSHAKE_TOPIC, payload=json.dumps(payload), hostname=MQTT_BROKER, port=MQTT_PORT)
     
     time.sleep(1)
     

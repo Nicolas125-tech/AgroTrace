@@ -1,12 +1,13 @@
 import os
+
 os.environ['SECRET_KEY'] = 'test-secret-key-123'
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.domain.models import Base
 
 from src.core.config import settings
+from src.domain.models import Base
 
 DB_URL = settings.DATABASE_URL
 engine = create_engine(DB_URL)

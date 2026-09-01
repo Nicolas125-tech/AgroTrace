@@ -1,8 +1,8 @@
 import json
-import time
 import random
 from datetime import datetime, timedelta
-import paho.mqtt.publish as publish
+
+from paho.mqtt import publish
 
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883

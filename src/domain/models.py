@@ -1,5 +1,6 @@
 import enum
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, event, DDL
+
+from sqlalchemy import DDL, Column, DateTime, Enum, ForeignKey, Integer, String, event
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()

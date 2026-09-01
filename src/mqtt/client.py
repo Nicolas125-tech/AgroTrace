@@ -1,5 +1,7 @@
-import paho.mqtt.client as mqtt
 import logging
+
+import paho.mqtt.client as mqtt
+
 from src.mqtt.handler import process_handshake_message
 
 logger = logging.getLogger(__name__)

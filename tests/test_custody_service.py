@@ -1,9 +1,12 @@
-import os
-import pytest
 from datetime import datetime
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from src.domain.models import Base, Shipment, CargoProfile, CustodyTransfer, CustodyStatus, ShipmentStatus, Telemetry
+
+from src.domain.models import (
+    CargoProfile,
+    CustodyStatus,
+    Shipment,
+    ShipmentStatus,
+    Telemetry,
+)
 from src.services.custody_service import initiate_transfer, process_fast_path_handshake
 
 # Conecta ao PostgreSQL/TimescaleDB no Docker

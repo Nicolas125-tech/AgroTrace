@@ -1,8 +1,8 @@
 import pytest
-from sqlalchemy import text
-from src.domain.models import Shipment, CargoProfile, Base
-from src.db.session import engine, tenant_context
 from sqlalchemy.orm import sessionmaker
+
+from src.db.session import engine, tenant_context
+from src.domain.models import Base, CargoProfile, Shipment
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -1,12 +1,20 @@
-import pytest
-import time
 import json
+import time
 from datetime import datetime
-import paho.mqtt.publish as publish
-from src.domain.models import Shipment, CargoProfile, CustodyTransfer, CustodyStatus, ShipmentStatus
+
+import pytest
+from paho.mqtt import publish
+
+from src.domain.models import (
+    CargoProfile,
+    CustodyStatus,
+    CustodyTransfer,
+    Shipment,
+    ShipmentStatus,
+)
+from src.mqtt.client import HANDSHAKE_TOPIC, MQTT_BROKER, MQTT_PORT, start_mqtt_client
 from src.services.custody_service import initiate_transfer
-from src.mqtt.client import start_mqtt_client, MQTT_BROKER, MQTT_PORT, HANDSHAKE_TOPIC
-from src.db.session import SessionLocal
+
 
 @pytest.fixture(scope="module")
 def mqtt_client_fixture():
