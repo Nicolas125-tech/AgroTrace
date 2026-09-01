@@ -56,6 +56,38 @@ def resolve_quarantined(transfer_id: int, force_status: CustodyStatus, db: Sessi
         return {"status": "success", "new_status": transfer.status}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+from typing import List
+from src.domain.models import ShipmentStatus
+
+class ShipmentListItemView(BaseModel):
+    id: int
+    status: str
+    tenant_id: int
+    profile_id: int
+    grace_period_hours: int
+
+@router.get("/api/shipments", response_model=List[ShipmentListItemView])
+def list_shipments(
+    status: ShipmentStatus | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_authenticated_db)
+):
+    query = db.query(Shipment)
+    if status:
+        query = query.filter(Shipment.status == status)
+    
+    shipments = query.order_by(Shipment.id.desc()).offset(offset).limit(limit).all()
+    
+    return [
+        ShipmentListItemView(
+            id=s.id,
+            status=s.status.value,
+            tenant_id=s.tenant_id,
+            profile_id=s.profile_id,
+            grace_period_hours=s.grace_period_hours
+        ) for s in shipments
+    ]
 
 @router.get("/api/shipments/{id}")
 def get_shipment(id: int, db: Session = Depends(get_authenticated_db)):

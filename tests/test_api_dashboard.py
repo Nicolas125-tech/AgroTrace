@@ -34,6 +34,19 @@ def test_dashboard_endpoints(db_session):
     token = generate_tenant_token(tenant_id=1, role="producer")
     headers = {"Authorization": f"Bearer {token}"}
     
+    # Test GET /api/shipments (list)
+    res = client.get("/api/shipments", headers=headers)
+    assert res.status_code == 200
+    list_data = res.json()
+    assert len(list_data) >= 1
+    assert list_data[0]["status"] == "in_transit"
+    
+    # Test GET /api/shipments with status filter
+    res = client.get("/api/shipments?status=delivered", headers=headers)
+    assert res.status_code == 200
+    empty_list = res.json()
+    assert len(empty_list) == 0
+
     # Test GET /api/shipments/{id}
     res = client.get(f"/api/shipments/{shipment.id}", headers=headers)
     assert res.status_code == 200

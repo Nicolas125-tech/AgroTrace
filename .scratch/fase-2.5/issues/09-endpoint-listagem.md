@@ -4,8 +4,8 @@
 
 **Blocked by:** 08: Aplicar autenticação nos endpoints existentes
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Criar rota `GET /api/shipments` exigindo tenant autenticado.
-- [ ] Implementar paginação básica (limit/offset ou cursor).
-- [ ] Implementar suporte a filtragem pelo campo de status da remessa.
+- [x] Criar rota `GET /api/shipments` exigindo tenant autenticado.
+- [x] Implementar paginação básica (limit/offset ou cursor).
+- [x] Implementar suporte a filtragem pelo campo de status da remessa.
