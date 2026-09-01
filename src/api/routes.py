@@ -7,8 +7,23 @@ from src.services.custody_service import initiate_transfer, resolve_quarantined_
 
 router = APIRouter()
 
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import text
+
+security = HTTPBearer()
+
+def get_authenticated_db(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
+    from src.core.security import verify_tenant_token
+    try:
+        payload = verify_tenant_token(credentials.credentials)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    
+    tenant_id = payload["tenant_id"]
+    db.execute(text("SELECT set_config('app.current_tenant', :tenant_id, true)"), {"tenant_id": str(tenant_id)})
+    return db
 @router.post("/api/shipments/{id}/handshake/initiate")
-def scan_qr_code(id: int, db: Session = Depends(get_db)):
+def scan_qr_code(id: int, db: Session = Depends(get_authenticated_db)):
     """Called by the warehouse scanner to receive the physical cargo."""
     try:
         transfer = initiate_transfer(db, shipment_id=id)
@@ -34,7 +49,7 @@ def login_tenant(payload: LoginRequest, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer"}
 
 @router.post("/api/admin/transfers/{transfer_id}/resolve")
-def resolve_quarantined(transfer_id: int, force_status: CustodyStatus, db: Session = Depends(get_db)):
+def resolve_quarantined(transfer_id: int, force_status: CustodyStatus, db: Session = Depends(get_authenticated_db)):
     """Manual audit resolution for Quarantined shipments."""
     try:
         transfer = resolve_quarantined_transfer(db, transfer_id, force_status)
@@ -43,7 +58,7 @@ def resolve_quarantined(transfer_id: int, force_status: CustodyStatus, db: Sessi
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/api/shipments/{id}")
-def get_shipment(id: int, db: Session = Depends(get_db)):
+def get_shipment(id: int, db: Session = Depends(get_authenticated_db)):
     from src.services.dashboard_service import get_shipment_details
     details = get_shipment_details(db, id)
     if not details:
@@ -51,12 +66,12 @@ def get_shipment(id: int, db: Session = Depends(get_db)):
     return details
 
 @router.get("/api/shipments/{id}/telemetry")
-def get_shipment_telemetry(id: int, bucket_interval: str = "5 minutes", db: Session = Depends(get_db)):
+def get_shipment_telemetry(id: int, bucket_interval: str = "5 minutes", db: Session = Depends(get_authenticated_db)):
     from src.services.dashboard_service import get_telemetry_downsampled
     return get_telemetry_downsampled(db, id, bucket_interval)
 
 @router.get("/api/shipments/{id}/route")
-def get_shipment_route(id: int, bucket_interval: str = "15 minutes", db: Session = Depends(get_db)):
+def get_shipment_route(id: int, bucket_interval: str = "15 minutes", db: Session = Depends(get_authenticated_db)):
     from src.services.dashboard_service import get_simplified_route
     return get_simplified_route(db, id, bucket_interval)
 
@@ -71,7 +86,7 @@ class PublicShipmentView(BaseModel):
     tenant_id: int
 
 @router.post("/api/shipments/{id}/generate-qr")
-def generate_qr_url(id: int, db: Session = Depends(get_db)):
+def generate_qr_url(id: int, db: Session = Depends(get_authenticated_db)):
     shipment = db.query(Shipment).filter(Shipment.id == id).first()
     if not shipment:
         raise HTTPException(status_code=404, detail="Shipment not found")

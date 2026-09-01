@@ -13,7 +13,7 @@ def test_dashboard_endpoints(db_session):
     db_session.add(profile)
     db_session.commit()
     
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=2)
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=2, tenant_id=1)
     db_session.add(shipment)
     db_session.commit()
     
@@ -30,21 +30,25 @@ def test_dashboard_endpoints(db_session):
         db_session.add(t)
     db_session.commit()
     
+    from src.core.security import generate_tenant_token
+    token = generate_tenant_token(tenant_id=1, role="producer")
+    headers = {"Authorization": f"Bearer {token}"}
+    
     # Test GET /api/shipments/{id}
-    res = client.get(f"/api/shipments/{shipment.id}")
+    res = client.get(f"/api/shipments/{shipment.id}", headers=headers)
     assert res.status_code == 200
     data = res.json()
     assert data["profile"]["name"] == "DashTest"
     
     # Test GET /api/shipments/{id}/telemetry (default 5 minutos -> 60/5 = 12 buckets)
-    res = client.get(f"/api/shipments/{shipment.id}/telemetry")
+    res = client.get(f"/api/shipments/{shipment.id}/telemetry", headers=headers)
     assert res.status_code == 200
     telemetry_data = res.json()
     assert len(telemetry_data) == 12 # O downsampling mágico do TimescaleDB
     assert "temperature" in telemetry_data[0]
     
     # Test GET /api/shipments/{id}/route (default 15 minutos -> 60/15 = 4 buckets)
-    res = client.get(f"/api/shipments/{shipment.id}/route")
+    res = client.get(f"/api/shipments/{shipment.id}/route", headers=headers)
     assert res.status_code == 200
     route_data = res.json()
     assert len(route_data) == 4
