@@ -14,6 +14,7 @@ dependencies = [
     "pytest>=9.1.1",
     "sqlalchemy>=2.0.52",
     "uvicorn>=0.52.4",
+    "passlib[bcrypt]>=1.7.4",
 ]
 
 [tool.ruff.lint]

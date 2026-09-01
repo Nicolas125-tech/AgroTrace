@@ -16,6 +16,23 @@ def scan_qr_code(id: int, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+from pydantic import BaseModel
+from src.core.security import verify_password, generate_tenant_token
+from src.domain.models import Tenant
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@router.post("/api/auth/login")
+def login_tenant(payload: LoginRequest, db: Session = Depends(get_db)):
+    tenant = db.query(Tenant).filter(Tenant.username == payload.username).first()
+    if not tenant or not verify_password(payload.password, tenant.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    
+    token = generate_tenant_token(tenant.id, tenant.role.value)
+    return {"access_token": token, "token_type": "bearer"}
+
 @router.post("/api/admin/transfers/{transfer_id}/resolve")
 def resolve_quarantined(transfer_id: int, force_status: CustodyStatus, db: Session = Depends(get_db)):
     """Manual audit resolution for Quarantined shipments."""
