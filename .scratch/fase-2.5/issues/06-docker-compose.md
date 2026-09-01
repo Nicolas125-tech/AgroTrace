@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Revisar os arquivos recém-criados `Dockerfile` e `Dockerfile.mosquitto` (voltados para deploy no Render) e garantir que o compose se beneficie ou interaja bem com eles localmente.
-- [ ] Adicionar o serviço da API backend no `docker-compose.yml`.
-- [ ] Adicionar o serviço do frontend web.
-- [ ] Configurar redes e variáveis de ambiente no compose para que backend comunique com DB/MQTT, e frontend comunique com backend.
+- [x] Revisar os arquivos recém-criados `Dockerfile` e `Dockerfile.mosquitto` (voltados para deploy no Render) e garantir que o compose se beneficie ou interaja bem com eles localmente.
+- [x] Adicionar o serviço da API backend no `docker-compose.yml`.
+- [x] Adicionar o serviço do frontend web.
+- [x] Configurar redes e variáveis de ambiente no compose para que backend comunique com DB/MQTT, e frontend comunique com backend.
