@@ -33,7 +33,73 @@ Nas estradas rurais do agronegócio não há sinal 4G. Exigir que o motorista fa
 - **Web Frontend**: Next.js (App Router), React Query, Tailwind CSS, Recharts, MapLibre
 - **Mobile**: React Native (Expo), Zustand, AsyncStorage, expo-camera
 
-## 🚀 Como Rodar o MVP
-Todo o ecossistema está orquestrado e tipado em TypeScript e Python moderno, provendo uma fundação escalável que respeita testes automatizados rigorosos (pytest para validação ponta a ponta) e princípios severos de isolamento.
+## 🚀 Como Rodar o MVP (Desenvolvimento Local)
+
+### Pré-requisitos
+- [Docker](https://docs.docker.com/get-docker/) e Docker Compose
+- [uv](https://github.com/astral-sh/uv) (Gerenciador de pacotes e dependências Python)
+- Node.js (versão 20+)
+
+### 1. Configurando o Ambiente
+Clone o repositório e crie o arquivo `.env` baseado no `.env.example`:
+```bash
+cp .env.example .env
+```
+O `.env` precisa de algumas chaves. Para desenvolvimento, você pode preenchê-las assim:
+```env
+# Banco de Dados
+POSTGRES_USER=agrotrace
+POSTGRES_PASSWORD=agrotrace_dev
+POSTGRES_DB=agrotrace
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+
+# Mensageria
+MQTT_BROKER=localhost
+
+# Segurança
+SECRET_KEY=uma_chave_secreta_aleatoria_aqui
+```
+
+### 2. Subindo a Infraestrutura Completa (Docker Compose)
+Para facilitar o desenvolvimento, você pode subir o banco de dados (TimescaleDB), o broker de mensageria (Mosquitto), a API Backend e o Frontend simultaneamente:
+```bash
+docker-compose up --build
+```
+- A **API Backend** ficará disponível em: `http://localhost:8000`
+- O **Frontend Dashboard** ficará disponível em: `http://localhost:3000`
+
+### 3. Rodando Manualmente (Sem Docker)
+Caso queira rodar os componentes fora do Docker para debug:
+
+**Backend (API):**
+```bash
+# Instala as dependências usando uv
+uv sync
+
+# Sobe o servidor FastAPI
+uv run uvicorn main:app --reload
+```
+
+**Frontend (Web Dashboard):**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## ☁️ Deploy em Produção (Render)
+
+A infraestrutura foi preparada para ser facilmente hospedada no [Render.com](https://render.com/).
+
+O repositório já contém as definições de infraestrutura como código (IaC):
+- `render.yaml`: Define o web service do FastAPI e os scripts de build.
+- `Dockerfile` (na raiz): Imagem de produção do Backend (FastAPI).
+- `Dockerfile.mosquitto`: Configuração de proxy e broker do MQTT caso precise hospedar o seu próprio mosquitto lá.
+- `scripts/render_deploy.py`: Script para automação do deploy que empacota o ambiente via `uv`.
+
+Para fazer o deploy, conecte o repositório ao Render e crie o serviço utilizando o `render.yaml` como Blueprint. Lembre-se de preencher a variável `SECRET_KEY` no painel do Render!
+
+---
 
 *(Consulte os arquivos na pasta `docs/` e `docs/adr/` para um mergulho detalhado nas decisões arquiteturais e design do Domínio.)*
