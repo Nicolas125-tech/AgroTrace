@@ -1,17 +1,29 @@
 import os
+import pytest
 
 os.environ['SECRET_KEY'] = 'test-secret-key-123'
+os.environ['POSTGRES_PASSWORD'] = 'fake'
 
-import pytest
+# We mock engine before main is imported to avoid hitting Postgres
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import sqlalchemy.event as event
 
-from src.core.config import settings
-from src.domain.models import Base
-
-DB_URL = settings.DATABASE_URL
-engine = create_engine(DB_URL)
+DB_URL = "sqlite:///:memory:"
+engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+import src.db.session
+src.db.session.engine = engine
+src.db.session.SessionLocal = TestingSessionLocal
+
+from src.domain.models import Base, Telemetry, Shipment
+
+# Remove event listeners to avoid execution of PG specific queries on sqlite
+event.remove(Telemetry.__table__, "after_create", src.domain.models.hypertable_ddl)
+event.remove(Shipment.__table__, "after_create", src.domain.models.shipments_rls_ddl)
+
+from main import app
 
 @pytest.fixture(scope="function")
 def db_session():

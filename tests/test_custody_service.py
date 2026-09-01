@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from src.domain.models import (
     CargoProfile,
@@ -6,31 +6,44 @@ from src.domain.models import (
     Shipment,
     ShipmentStatus,
     Telemetry,
+    Tenant,
+    TenantRole
 )
 from src.services.custody_service import initiate_transfer, process_fast_path_handshake
 
-# Conecta ao PostgreSQL/TimescaleDB no Docker
-
+def create_tenant(db_session):
+    tenant = Tenant(name="Test Tenant", username="testuser", hashed_password="pw", role=TenantRole.PRODUCER)
+    db_session.add(tenant)
+    db_session.commit()
+    db_session.refresh(tenant)
+    return tenant
 
 def test_initiate_transfer(db_session):
+    tenant = create_tenant(db_session)
     profile = CargoProfile(name="Protein", max_temp=-18, min_temp=-30, continuous_exposure_limit_minutes=15)
     db_session.add(profile)
     db_session.commit()
+    db_session.refresh(profile)
     
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=2)
+    shipment = Shipment(tenant_id=tenant.id, profile_id=profile.id, grace_period_hours=2)
     db_session.add(shipment)
     db_session.commit()
+    db_session.refresh(shipment)
     
     transfer = initiate_transfer(db_session, shipment.id)
     assert transfer.status == CustodyStatus.PENDING_SYNC
 
 def test_fast_path_handshake_rejects_and_breaches(db_session):
-    # setup
+    tenant = create_tenant(db_session)
     profile = CargoProfile(name="Coffee", max_temp=25, min_temp=10, continuous_exposure_limit_minutes=60)
     db_session.add(profile)
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=24)
+    db_session.commit()
+    db_session.refresh(profile)
+
+    shipment = Shipment(tenant_id=tenant.id, profile_id=profile.id, grace_period_hours=24)
     db_session.add(shipment)
     db_session.commit()
+    db_session.refresh(shipment)
     
     initiate_transfer(db_session, shipment.id)
     
@@ -42,11 +55,16 @@ def test_fast_path_handshake_rejects_and_breaches(db_session):
     assert shipment.status == ShipmentStatus.BREACHED
 
 def test_telemetry_insert_hypertable(db_session):
+    tenant = create_tenant(db_session)
     profile = CargoProfile(name="Test", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=1)
     db_session.add(profile)
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=1)
+    db_session.commit()
+    db_session.refresh(profile)
+
+    shipment = Shipment(tenant_id=tenant.id, profile_id=profile.id, grace_period_hours=1)
     db_session.add(shipment)
     db_session.commit()
+    db_session.refresh(shipment)
     
     # Insere leitura no Slow-Path (hypertable)
     tel = Telemetry(timestamp=datetime.utcnow(), shipment_id=shipment.id, temperature=5)
