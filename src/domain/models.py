@@ -16,6 +16,19 @@ class CustodyStatus(str, enum.Enum):
     REJECTED = "rejected"
     QUARANTINED = "quarantined"
 
+class TenantRole(str, enum.Enum):
+    PRODUCER = "producer"
+    CARRIER = "carrier"
+    BUYER = "buyer"
+
+class Tenant(Base):
+    __tablename__ = "tenants"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    username = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
+    role = Column(Enum(TenantRole), nullable=False)
+
 class CargoProfile(Base):
     __tablename__ = "cargo_profiles"
     id = Column(Integer, primary_key=True)
