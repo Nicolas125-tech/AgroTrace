@@ -1,9 +1,9 @@
-import pytest
-from fastapi.testclient import TestClient
-from main import app
-from src.domain.models import Shipment, CargoProfile, Telemetry
-from src.db.session import SessionLocal
 from datetime import datetime, timedelta
+
+from fastapi.testclient import TestClient
+
+from main import app
+from src.domain.models import CargoProfile, Shipment, Telemetry
 
 client = TestClient(app)
 

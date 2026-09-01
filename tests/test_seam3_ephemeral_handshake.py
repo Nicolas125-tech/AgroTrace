@@ -1,13 +1,12 @@
-import pytest
 from fastapi.testclient import TestClient
-from src.domain.models import Shipment, CargoProfile, CustodyTransfer
-from src.db.session import SessionLocal, tenant_context
 from sqlalchemy.orm import sessionmaker
-from src.db.session import engine
+
+from src.db.session import engine, tenant_context
+from src.domain.models import CargoProfile, CustodyTransfer, Shipment
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-from src.core.security import generate_signed_token
 from main import app
+from src.core.security import generate_signed_token
 
 client = TestClient(app)
 

@@ -1,4 +1,5 @@
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+
 from src.core.config import settings
 
 # Em produção, a secret key vem do vault/ambiente

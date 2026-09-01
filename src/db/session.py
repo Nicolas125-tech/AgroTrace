@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine, text, event
-from sqlalchemy.orm import sessionmaker, Session
-from src.core.config import settings
 from contextvars import ContextVar
+
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.orm import Session, sessionmaker
+
+from src.core.config import settings
 
 tenant_context = ContextVar("tenant_id", default=None)
 

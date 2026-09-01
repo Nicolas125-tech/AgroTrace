@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      timescaledb:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_USER: agrotrace
+          POSTGRES_PASSWORD: your_secure_password
+          POSTGRES_DB: agrotrace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+      mosquitto:
+        image: eclipse-mosquitto:latest
+        ports:
+          - 1883:1883
+          - 9001:9001
+
+    env:
+      POSTGRES_USER: agrotrace
+      POSTGRES_PASSWORD: your_secure_password
+      POSTGRES_DB: agrotrace
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      SECRET_KEY: test-secret-key-123
+      MQTT_BROKER: localhost
+      
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+          
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+        
+      - name: Run linter (Ruff)
+        run: uvx ruff check .
+        
+      - name: Run tests (pytest)
+        run: uv run pytest

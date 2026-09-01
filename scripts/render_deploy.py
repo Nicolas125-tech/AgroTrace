@@ -1,7 +1,7 @@
-import urllib.request
-import urllib.error
 import json
 import sys
+import urllib.error
+import urllib.request
 
 API_KEY = "rnd_lwBck2zHTYx1WauMSiiXude3bm8F"
 HEADERS = {

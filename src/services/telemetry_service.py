@@ -1,7 +1,9 @@
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
+
 from src.domain.models import Telemetry
 from src.mqtt.schemas import TelemetryBatchPayload
+
 
 def ingest_telemetry_batch(db: Session, payload: TelemetryBatchPayload):
     if not payload.readings:

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from src.domain.models import CustodyStatus
-from src.services.custody_service import initiate_transfer, resolve_quarantined_transfer
+
 from src.db.session import get_db
+from src.domain.models import CustodyStatus, Shipment
+from src.services.custody_service import initiate_transfer, resolve_quarantined_transfer
 
 router = APIRouter()
 
@@ -43,7 +44,9 @@ def get_shipment_route(id: int, bucket_interval: str = "15 minutes", db: Session
     return get_simplified_route(db, id, bucket_interval)
 
 from pydantic import BaseModel
+
 from src.core.security import generate_signed_token, verify_signed_token
+
 
 class PublicShipmentView(BaseModel):
     id: int
@@ -84,13 +87,13 @@ def public_handshake_view(token: str, db: Session = Depends(get_db)):
     )
 
 from datetime import datetime
-from typing import Optional
+
 
 class EphemeralDriverPayload(BaseModel):
     driver_cpf: str
     driver_name: str
     vehicle_plate: str
-    offline_timestamp: Optional[datetime] = None
+    offline_timestamp: datetime | None = None
 
 @router.post("/api/public/handshake")
 def public_handshake_action(token: str, payload: EphemeralDriverPayload, db: Session = Depends(get_db)):
