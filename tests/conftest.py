@@ -3,7 +3,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.domain.models import Base
 
-DB_URL = "postgresql+psycopg://agrotrace:agrotrace_dev@localhost:5432/agrotrace"
+from src.core.config import settings
+
+DB_URL = settings.DATABASE_URL
 engine = create_engine(DB_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
