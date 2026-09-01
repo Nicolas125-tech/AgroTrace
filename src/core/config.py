@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     POSTGRES_USER: str = "agrotrace"
-    POSTGRES_PASSWORD: str = "agrotrace_dev"
+    POSTGRES_PASSWORD: str
     POSTGRES_DB: str = "agrotrace"
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: str = "5432"
