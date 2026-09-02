@@ -1,37 +1,36 @@
-# AgroTrace - Phase 1 Executive Summary
+# AgroTrace - Resumo da Fase 1
 
-## Overview
-A Fase 1 do MVP backend do AgroTrace foi concluída com sucesso. Estabelecemos as fundações de um sistema logístico tolerante a falhas, capaz de atuar na "borda" (edge) resolvendo conflitos de custódia e processando telemetria em alta frequência.
+## Visão Geral
+Concluímos a Fase 1 do backend do MVP do AgroTrace. Criamos a base de um sistema de logística preparado para lidar com quedas de conexão, resolver a transferência de responsabilidade das cargas e processar dados dos sensores rapidamente.
 
-## Entregas Chave (Key Deliverables)
+## Entregas Principais
 
-### 1. Fundação de Domínio e Arquitetura
-- **6 ADRs (Architecture Decision Records)**: Documentaram formalmente as regras de negócio:
-  - O cálculo da **Ruptura de Cadeia Fria** via tolerâncias do `CargoProfile`.
-  - As mecânicas de **Handshake** assíncrono em zonas sem cobertura de rede.
-  - As regras de **Quarentena** quando um hardware "morre" no meio de uma transferência (> 24h).
-  - O conceito de **Grace Period** para offlines toleráveis (In Transit - Offline).
-  - A separação fundamental da arquitetura entre o **Fast-Path** (flags de aceite rápido) e **Slow-Path** (sincronização massiva histórica).
+### 1. Regras de Negócio e Arquitetura
+- **Documentação de Decisões (ADRs)**: Definimos:
+  - Como calcular se a carga saiu da temperatura certa usando o `CargoProfile`.
+  - Como o motorista assume a carga mesmo sem internet.
+  - As regras de quarentena caso o sensor quebre ou fique offline por mais de 24h.
+  - O tempo limite de tolerância (Grace Period) para ficar offline sem gerar alertas.
+  - A divisão entre validação rápida (Fast-Path) e validação completa do histórico (Slow-Path).
 
-### 2. Infraestrutura e Stack
-- **Ambiente de Alta Performance**: Todo o gerenciamento de dependências virtualizado perfeitamente através da ferramenta `uv`.
-- **API Engine**: Backend em FastAPI rodando de forma estritamente assíncrona.
-- **Armazenamento de Série Temporal**: Adoção do **TimescaleDB** rodando em Docker como espinha dorsal persistente, incluindo hiper-tabelas (hypertables) provisionadas por gatilhos (hooks DDL).
-- **Edge Message Broker**: Eclipse Mosquitto no Docker servindo como o sistema nervoso central simulado.
+### 2. Infraestrutura
+- O projeto usa `uv` para gerenciar as dependências Python.
+- API criada em FastAPI.
+- Usamos **TimescaleDB** (PostgreSQL) para lidar com a quantidade grande de dados gerados pelos sensores.
+- Broker MQTT (Mosquitto) para receber os dados.
 
-### 3. Pipelines de Ingestão MQTT
-- **Fast-Path**: Listener robusto no tópico `agrotrace/handshake` que valida a carga viva da borda via Pydantic e aciona a Máquina de Estados (FSM). Em caso de corrupção ou violação da carga, o modelo imutável congela o status para `Rejected` e a remessa para `Breached`.
-- **Slow-Path**: Worker massivo no tópico `agrotrace/telemetry`. Desempacota lotes de telemetria histórica e executa otimizações de I/O fazendo `bulk_inserts` diretos na Hypertable.
+### 3. Recebimento de Dados (MQTT)
+- **Fast-Path**: Uma rotina no tópico `agrotrace/handshake` valida os dados importantes na hora, para avisar logo se a carga foi comprometida.
+- **Slow-Path**: Uma rotina no tópico `agrotrace/telemetry` pega o histórico completo de temperatura e salva em lotes no banco de dados.
 
-### 4. Consumo Otimizado (Dashboard API)
-- Para evitar travamentos no consumo de dados brutos pelo frontend (React/Recharts), o serviço mastiga a telemetria já dentro do motor de banco de dados:
-  - **Downsampling Térmico**: Uso da função nativa `time_bucket` agrupa milhares de entradas em médias limpas a cada X minutos.
-  - **Downsampling Espacial**: Redução da granularidade do GPS para que o renderizador de mapas (MapLibre) foque nos eixos primários do trajeto da transportadora.
+### 4. API do Dashboard
+- Para não sobrecarregar a tela do usuário com milhares de pontos de temperatura, agregamos os dados no próprio banco:
+  - Juntamos as temperaturas em blocos (usando `time_bucket`) para gerar médias.
+  - Filtramos os dados do GPS para simplificar a renderização do mapa no frontend.
 
-### 5. Garantia de Qualidade
-- **TDD (Test-Driven Development)**: A lógica foi erguida aplicando testes desde a primeira linha de código, injetados diretamente na engine do PostgreSQL em containers.
-- **Code Reviews Contínuos**: Garantiram a eliminação de code smells (como chamadas síncronas bloqueantes do SQLAlchemy mascaradas em funçẽos assíncronas no Event Loop).
-- **Edge Simulator**: Script consolidado para estressar nossa rede virtual com telemetria realista forjada.
+### 5. Qualidade
+- Criamos testes de integração integrados ao banco de dados rodando no Docker.
+- Script para simular dados falsos de sensores, para testarmos como o sistema se comporta sob carga.
 
 ## Conclusão
-O núcleo backend do MVP está 100% blindado contra falhas físicas e de rede. Estamos prontos para plugar a inteligência do Frontend!
+O núcleo do backend já está pronto e lidando bem com falhas de rede. O próximo passo é integrar com o Frontend!

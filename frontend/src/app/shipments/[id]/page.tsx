@@ -39,7 +39,7 @@ function ShipmentDashboard() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Package className="h-8 w-8 text-blue-600" />
-            Remessa #{shipment.id}
+            Carga #{shipment.id}
           </h1>
           <p className="text-gray-500 mt-1">Cargo Profile: {shipment.profile.name}</p>
         </div>
@@ -49,7 +49,7 @@ function ShipmentDashboard() {
           </Badge>
           {isBreached && (
             <Badge variant="destructive" className="flex items-center gap-1 animate-pulse">
-              <AlertTriangle className="w-4 h-4" /> Ruptura de Cadeia Fria Confirmada
+              <AlertTriangle className="w-4 h-4" /> Quebra de Temperatura Confirmada
             </Badge>
           )}
         </div>
@@ -71,7 +71,7 @@ function ShipmentDashboard() {
                 minTemp={shipment.profile.min_temp} 
               />
             ) : (
-              <div className="flex h-[400px] items-center justify-center text-gray-400">Carregando série temporal...</div>
+              <div className="flex h-[400px] items-center justify-center text-gray-400">Carregando histórico...</div>
             )}
           </CardContent>
         </Card>
@@ -80,7 +80,7 @@ function ShipmentDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapIcon className="h-5 w-5 text-gray-500" />
-              Histórico de Rota Espacial
+              Histórico de Rota
             </CardTitle>
           </CardHeader>
           <CardContent>

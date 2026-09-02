@@ -20,7 +20,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Adicionar checagem de token real depois que tivermos tela de login
+    // TODO: Adicionar checagem de token depois de criar a tela de login
     api.get('/shipments')
       .then(res => setShipments(res.data))
       .catch(err => console.error("Erro ao carregar remessas:", err))
@@ -31,13 +31,13 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <header className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Visão Geral da Frota</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Minhas Cargas</h1>
         </header>
         
-        {/* Mapa das frotas */}
+        {/* Mapa */}
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800">Frotas em Trânsito</h2>
+            <h2 className="text-lg font-semibold text-gray-800">Cargas em Trânsito</h2>
           </div>
           <div className="h-96 w-full">
             <Map
@@ -49,16 +49,15 @@ export default function Home() {
               }}
               mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
             >
-              {/* No futuro os marcadores reais virão de /api/shipments/{id}/route da lista ativa */}
               <Marker longitude={-46.6333} latitude={-23.5505} color="red" />
             </Map>
           </div>
         </section>
 
-        {/* Lista de Remessas */}
+        {/* Lista */}
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800">Minhas Remessas</h2>
+            <h2 className="text-lg font-semibold text-gray-800">Lista de Remessas</h2>
           </div>
           
           <div className="overflow-x-auto">
@@ -74,13 +73,13 @@ export default function Home() {
                 {loading ? (
                   <tr>
                     <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                      Carregando remessas...
+                      Carregando...
                     </td>
                   </tr>
                 ) : shipments.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                      Nenhuma remessa encontrada. (Você fez login?)
+                      Nenhuma carga encontrada.
                     </td>
                   </tr>
                 ) : shipments.map(s => (

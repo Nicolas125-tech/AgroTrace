@@ -1,27 +1,27 @@
-# AgroTrace - Phase 2 Executive Summary (Multi-tenant & Security)
+# AgroTrace - Resumo da Fase 2 (Segurança e Múltiplos Clientes)
 
-## Overview
-A Fase 2 do MVP backend do AgroTrace elevou nossa plataforma a um nível de segurança de padrão empresarial, focando integralmente no Isolamento Multi-tenant e na Segurança de Acesso Público. Consolidamos um modelo arquitetural blindado que protege o ativo mais valioso das transportadoras (suas rotas logísticas e telemetria térmica) enquanto resolve os maiores gargalos de fricção na adoção em rodovias.
+## Visão Geral
+Na Fase 2 do backend do AgroTrace, focamos na segurança do acesso e em garantir que diferentes empresas possam usar o mesmo sistema sem acessar os dados umas das outras. 
 
-## Entregas Chave (Key Deliverables)
+## Entregas Principais
 
-### 1. Isolamento de Dados Absoluto (Row-Level Security)
-- **PostgreSQL RLS Nativo**: Removemos o risco humano (vazamentos por esquecimento de `where clauses` nas APIs) empurrando a barreira de segurança para as entranhas do TimescaleDB (`ENABLE ROW LEVEL SECURITY`).
-- **Injeção de Contexto (ContextVar)**: Construímos um mecanismo ultra-performático integrado ao Connection Pool do SQLAlchemy. Através de eventos de sessão (`after_begin`), injetamos `SET LOCAL app.current_tenant` utilizando ContextVars asíncronos do Python. Isso garante isolamento perfeito transação por transação, sem risco de corrupção ou vazamento no pool de conexões do FastAPI.
+### 1. Isolamento de Dados (Múltiplas Empresas)
+- **Segurança no Banco (RLS)**: Usamos as políticas do PostgreSQL (Row-Level Security) para separar os dados de cada empresa. Assim, se alguém esquecer de colocar um `WHERE tenant_id=X` na query, o banco de dados mesmo assim barra o acesso.
+- **Injeção de Contexto**: A API manda um `SET LOCAL app.current_tenant` pro banco de dados em cada request. Isso ajuda a evitar o vazamento de informações.
 
-### 2. Segurança de Borda com Signed URLs
-- **Prevenção de IDOR e Raspagem**: Acessos diretos por IDs óbvios em QR Codes físicos são coisas do passado. Adotamos geração de Tokens Criptográficos **HMAC-SHA256** (via `itsdangerous`) embutidos no papel/código de barras.
-- **Portais Públicos Blindados**: O endpoint público decifra matematicamente a autenticidade e a expiração do link, e se válido, retorna apenas um modelo restrito, bloqueando 100% da visualização térmica e espacial privada da carga.
+### 2. URLs Seguras para o Motorista
+- Quando o motorista vai pegar a carga, ele lê um QR Code com um link. Esse link usa uma assinatura (HMAC-SHA256) pra garantir que não foi alterado.
+- Se o link for válido, o sistema libera só as informações necessárias para ele, escondendo dados sensíveis de trajeto ou temperatura da carga.
 
-### 3. Role-Based Access Control Pragmático (Custódia Efêmera)
-- **Identidades Efêmeras vs Tenants Formais**: A resposta arquitetural brilhante para subcontratações temporárias. Motoristas terceirizados (Seu João) interagem via Portal Público sem necessitar de e-mail, senha ou cadastro (zero fricção no chão de fábrica).
-- **Auditoria Cirúrgica**: Mesmo anonimizados formalmente no banco de `users`, o metadado da posse (CPF, Placa, Nome) é cravado irreversivelmente no registro de `CustodyTransfer` do proprietário formal (a Transportadora), garantindo cadeia de custódia física sem poluir a tabela de Tenants.
+### 3. Cadastro Temporário de Motoristas
+- Como os motoristas geralmente são terceirizados, seria muito ruim pedir para eles criarem uma conta no sistema só para transportar a carga.
+- Então, eles usam a URL segura do QR Code e digitam CPF, Nome e Placa. Esses dados ficam atrelados ao registro da carga da empresa, mantendo o controle da viagem sem encher o banco de usuários.
 
-### 4. Costuras de Teste Orientadas à Segurança (Testing Seams)
-- Blindamos nossa arquitetura com testes de integração focados não no código, mas no comportamento externo hostil:
-  - **Injeção Cross-Tenant**: Forçamos leituras globais maliciosas no SQLAlchemy; a engine devolveu arrays vazios perfeitamente isolados.
-  - **Adulteração de Hashes**: Interceptamos e quebramos o payload da URL, o que resultou em interceptação absoluta (HTTP 403 Forbidden).
-  - **Testes Temporais**: Forjamos relógios de sistema para testar tokens expirados (mais de 24 horas), garantindo que QR codes antigos virem lixo digital.
+### 4. Testes de Segurança
+- Criamos testes para ter certeza que as regras de isolamento de dados e os links seguros estavam funcionando:
+  - Tentamos acessar dados de outra empresa e conferimos se o sistema bloqueou (retornando lista vazia).
+  - Tentamos alterar o link (URL Segura) para ver se ele era negado com erro 403.
+  - Simulamos a expiração dos links alterando o relógio do sistema, para ver se links velhos não eram aceitos.
 
 ## Conclusão
-O AgroTrace agora possui um núcleo impenetrável. As Transportadoras concorrentes podem dividir o mesmo banco de dados com isolamento criptográfico absoluto, e os caminhoneiros autônomos podem assumir posses bilionárias sem sequer digitar uma senha. Excelente balanço entre Segurança Zero-Trust e UX de adoção.
+O sistema agora está mais seguro. Várias empresas podem dividir o mesmo banco de dados sem que uma veja os dados da outra, e o app ficou muito mais fácil pro motorista usar, já que ele não precisa de login e senha para trabalhar.

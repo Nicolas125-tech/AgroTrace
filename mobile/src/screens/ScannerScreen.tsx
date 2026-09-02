@@ -14,56 +14,47 @@ export function ScannerScreen() {
   const addHandshake = useSyncStore(state => state.addHandshake);
 
   if (!permission) {
-    // Permissões ainda carregando
     return <View style={styles.container} />;
   }
 
   if (!permission.granted) {
-    // Permissão negada ou ainda não solicitada
     return (
       <View style={styles.container}>
         <Text style={styles.message}>Precisamos da sua permissão para usar a câmera e escanear o QR Code da carga.</Text>
         <TouchableOpacity style={styles.primaryButton} onPress={requestPermission}>
-          <Text style={styles.primaryButtonText}>Conceder Permissão</Text>
+          <Text style={styles.primaryButtonText}>Permitir Câmera</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => Linking.openSettings()}>
-          <Text style={styles.secondaryButtonText}>Abrir Ajustes do Celular</Text>
+          <Text style={styles.secondaryButtonText}>Abrir Configurações</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // Trava de Leitura
   const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
-    // Pausa imediatamente se já temos um URL (evita loop infinito de reads)
     if (scannedUrl) return; 
-    
-    // Poderíamos checar aqui se a URL bate com o padrão esperado (ex: agrotrace.com/handshake)
     setScannedUrl(data);
   };
 
   const handleSubmit = () => {
     if (!name || !cpf || !plate) {
-      Alert.alert('Atenção', 'Por favor, preencha todos os campos obrigatórios para assumir a custódia da carga.');
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos para assumir a carga.');
       return;
     }
 
-    // A URL escaneada do papel/carga é a nossa Signed URL
     addHandshake(scannedUrl!, {
       driver_name: name,
       driver_cpf: cpf,
       vehicle_plate: plate,
     });
 
-    // Mágica do Offline
     Alert.alert(
-      'Custódia Registrada!',
-      'Suas informações foram salvas. A sincronização está rodando em background e será enviada quando houver sinal.',
+      'Carga Recebida!',
+      'Informações salvas. Os dados serão enviados automaticamente quando houver sinal de internet.',
       [
         {
           text: 'OK',
           onPress: () => {
-            // Reset da UI para um possível próximo escaneamento
             setScannedUrl(null);
             setName('');
             setCpf('');
@@ -84,14 +75,14 @@ export function ScannerScreen() {
             onBarcodeScanned={scannedUrl ? undefined : handleBarcodeScanned}
           />
           <View style={styles.overlay}>
-            <Text style={styles.overlayText}>Aponte para o QR Code da Carga</Text>
+            <Text style={styles.overlayText}>Aponte a câmera para o QR Code da carga</Text>
             <View style={styles.scanBox} />
           </View>
         </View>
       ) : (
         <View style={styles.formContainer}>
           <Text style={styles.formTitle}>Identificação</Text>
-          <Text style={styles.formSubtitle}>Carga identificada. Por favor, preencha os dados abaixo para assumir a custódia física (Seguro).</Text>
+          <Text style={styles.formSubtitle}>Carga identificada. Por favor, preencha os dados abaixo para continuar.</Text>
           
           <TextInput
             style={styles.input}
@@ -113,7 +104,7 @@ export function ScannerScreen() {
           
           <TextInput
             style={styles.input}
-            placeholder="Placa do Cavalo Mecânico (ex: ABC1234)"
+            placeholder="Placa do Caminhão (ex: ABC1234)"
             value={plate}
             onChangeText={setPlate}
             autoCapitalize="characters"
@@ -121,7 +112,7 @@ export function ScannerScreen() {
           />
 
           <TouchableOpacity style={styles.primaryButtonForm} onPress={handleSubmit}>
-            <Text style={styles.primaryButtonText}>Assumir Custódia</Text>
+            <Text style={styles.primaryButtonText}>Receber Carga</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.cancelButton} onPress={() => setScannedUrl(null)}>
@@ -137,7 +128,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#18181b', // Fundo escuro para contrastar no sol ao ler permissões
+    backgroundColor: '#18181b', 
   },
   message: {
     textAlign: 'center',
@@ -193,13 +184,13 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   input: {
-    height: 70, // Inputs massivos para dedos grandes/celulares no painel
+    height: 70, 
     borderWidth: 2,
     borderColor: '#e5e7eb',
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 20,
-    fontSize: 20, // Fonte grande para legibilidade à distância
+    fontSize: 20, 
     backgroundColor: '#f9fafb',
     color: '#111827',
   },

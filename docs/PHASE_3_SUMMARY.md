@@ -1,22 +1,22 @@
-# AgroTrace - Phase 3 Executive Summary (Mobile Offline-First)
+# AgroTrace - Resumo da Fase 3 (Mobile e Offline)
 
-## Overview
-A Fase 3 encerra o ciclo de ponta a ponta do AgroTrace entregando o aplicativo mobile (React Native / Expo) que opera na fronteira mais hostil do nosso domínio: o chão de fábrica e as rodovias rurais. Resolvemos o problema crônico de adoção em logística (motoristas perdendo o sinal e o app travando) implementando uma arquitetura 100% Offline-First baseada em mutações assíncronas.
+## Visão Geral
+A Fase 3 foca no aplicativo mobile (React Native / Expo) que será usado pelos motoristas. O principal desafio aqui é que as estradas e fazendas muitas vezes não têm sinal de internet, então o app precisa funcionar offline e não pode travar.
 
-## Entregas Chave (Key Deliverables)
+## Entregas Principais
 
-### 1. O Motor Offline (Mutation Queue)
-- **Zustand + AsyncStorage**: O coração do app é a store `useSyncStore`. Quando o motorista assume a custódia de uma carga na ausência de rede (3G/4G), o handshake é gravado no disco nativo do celular (AsyncStorage).
-- **Validade Jurídica (Timestamping)**: A action de salvamento injeta o `offline_timestamp`, capturando a hora local do momento exato do escaneamento. Isso fornece auditoria legítima (Fail-safe jurídico) sem depender do relógio atrasado do servidor quando a internet voltar.
+### 1. Funcionamento Offline (Fila de Sincronização)
+- **Zustand + AsyncStorage**: Quando o motorista assume uma carga sem internet, o aplicativo salva as informações direto no armazenamento do celular.
+- **Horário Exato**: O app guarda o horário local exato em que o QR Code foi lido (`offline_timestamp`). Isso é importante para fins legais e de seguro, garantindo que o horário registrado seja o da leitura, e não o de quando o celular reconectou na internet.
 
-### 2. Sincronização Autônoma Silenciosa
-- **Escuta de Conectividade**: Através do `useNetworkSync` rodando em background com `@react-native-community/netinfo`, o aplicativo monitora as antenas de celular ativamente.
-- **Idempotência**: No milissegundo em que uma conexão à internet é confirmada, a fila aciona o `flushQueue`. Os eventos armazenados são injetados de forma segura na nossa API FastAPI, retirando a responsabilidade de "clicar em sincronizar" das costas do motorista.
+### 2. Sincronização Automática
+- O aplicativo monitora o sinal de celular em segundo plano.
+- Assim que detecta conexão com a internet, o app envia automaticamente os dados salvos para a API. O motorista não precisa lembrar de apertar nenhum botão de "sincronizar".
 
-### 3. UX de Cabine e Scanner de Borda
-- **Trava de Câmera Anti-Loop**: O `expo-camera` foi orquestrado com uma trava imediata (Lock) que pausa o fluxo de quadros assim que a Signed URL da remessa é reconhecida, transicionando suavemente para a coleta de dados e evitando loops catastróficos no motor de renderização.
-- **Design de Contraste Extremo**: Inputs massivos (70px), cores sólidas em modo noturno (Dark Background `#18181b`) e botões contrastantes. Tudo modelado para legibilidade à distância contra os reflexos do sol em suportes de painel vibrantes.
-- **Aproximação Cloud-Only**: O rastreio pesado de GPS e telemetria térmica permanece com o hardware da carreta, economizando bateria e livrando o Seu João do pareamento burocrático de Bluetooth (BLE). 
+### 3. Interface e Uso da Câmera
+- **Câmera**: Configuramos a câmera para ler o QR Code e parar imediatamente, evitando que o app fique tentando ler várias vezes seguidas e trave.
+- **Design para a Estrada**: Usamos botões grandes e um modo escuro (Dark Mode) com alto contraste para facilitar a leitura no sol e o toque na tela com o celular no suporte do painel.
+- **Foco na Bateria**: O celular não fica rastreando a localização do motorista o tempo todo, e nem se conecta ao sensor via Bluetooth. O rastreamento pesado fica por conta do sensor da carga, poupando a bateria do telefone.
 
 ## Conclusão
-Com a Fase 3 consolidada, o AgroTrace cruza o abismo entre um simples painel web e um ecossistema operacional de IoT e mobilidade robusto. O motorista autônomo executa a burocracia logística com fluidez no bolso, enquanto o nosso backend concilia a linha do tempo retroativamente com precisão absoluta.
+Com o aplicativo finalizado, o sistema consegue ligar as pontas entre a logística física e o monitoramento em nuvem. O motorista consegue trabalhar tranquilamente mesmo sem internet, e o servidor arruma o histórico assim que os dados chegam.

@@ -1,62 +1,53 @@
 # AgroTrace
 
-Sistema de rastreamento de cadeia de frio para remessas agropecuárias com sensores de borda e validação de custódia.
+Sistema para rastreamento de temperatura de cargas agropecuárias. O sistema monitora sensores IoT e valida a transferência da carga entre os responsáveis.
 
-## Language
+## Termos do Projeto
 
 **Remessa**:
-Uma carga física (grão, proteína, café) monitorada através da cadeia de suprimentos. Após uma ruptura confirmada, seu ciclo de vida é encerrado e não pode ser reutilizada.
-_Avoid_: Carga, Lote, Shipment
+A carga física (grão, carne, etc) que estamos monitorando. Se o limite de temperatura for ultrapassado (ruptura), o ciclo dela acaba e não dá para reutilizar.
 
 **CargoProfile**:
-Perfil de tolerância da remessa que define limites máximo/mínimo de temperatura e o tempo contínuo de exposição permitido.
-_Avoid_: Regra de Temperatura, Configuração
+Regras que definem os limites de temperatura (máximo e mínimo) e por quanto tempo a carga pode ficar fora dessa faixa.
 
 **Ruptura**:
-Um estado crítico irreversível onde a remessa violou o tempo contínuo de exposição do seu CargoProfile. Resulta no encerramento da remessa (status `Breached`).
-_Avoid_: Violação, Alarme, Breach
+Quando a temperatura da carga sai dos limites por muito tempo, violando o CargoProfile. Isso encerra a remessa (status `Breached`).
 
 **Handshake de Custódia**:
-O processo de transferência de responsabilidade. Inicia com um escaneamento físico (QR Code) e é validado pelo Fast-Path (imediato) ou Slow-Path.
+É a transferência de responsabilidade da carga de uma pessoa para outra. Começa lendo um QR Code e é validado na hora (Fast-Path) ou depois (Slow-Path).
 
 **Pending Sync**:
-Estado temporário de custódia onde a carga foi recebida fisicamente, mas aguarda o payload MQTT (Fast-Path) para validar se houve Ruptura.
-_Avoid_: Recebido, Aguardando
+Quando a carga foi escaneada e recebida, mas o sistema ainda está esperando os dados dos sensores chegarem via MQTT para confirmar se houve alguma ruptura de temperatura.
 
 **Quarantined**:
-Estado de bloqueio digital acionado quando o descarregamento (Pending Sync) estoura o tempo limite (ex: 24h) por falha no hardware. Exige auditoria e resolução manual (forçando Accepted ou Rejected).
-_Avoid_: Disputed, Perdido
+Se uma carga fica presa no status "Pending Sync" por muito tempo (ex: mais de 24h) por problema no sensor, ela entra em quarentena. Alguém precisa entrar no sistema e aprovar ou rejeitar manualmente.
 
 **Fast-Path Validation**:
-Validação imediata de custódia baseada em um booleano de ruptura pré-calculado pela máquina de estados (FSM) da borda, enviado no primeiro pulso MQTT.
+Validação rápida. O primeiro dado enviado pelo sensor já diz se houve ruptura ou não, para agilizar a resposta.
 
 **Slow-Path Validation**:
-Conciliação assíncrona feita em background pelo backend, ingerindo o histórico completo de telemetria no TimescaleDB para bater com a flag antifraude do Fast-Path.
+Validação que roda em background. O sistema analisa todo o histórico de dados no banco (TimescaleDB) para conferir se a resposta rápida (Fast-Path) estava certa.
 
 **Grace Period**:
-Tempo de tolerância esperado sem conexão de rede, definido pela rota ou meio de transporte da remessa.
+Tempo limite que o sistema aceita que a carga fique sem enviar dados porque perdeu o sinal de internet no caminho.
 
 **In Transit - Offline**:
-Status da remessa quando perde o sinal dentro do Grace Period. É um estado normal e não gera alertas críticos no painel.
-_Avoid_: Desconectado, Sinal Perdido
+Status de quando a carga perde o sinal de internet, mas ainda está dentro do tempo limite (Grace Period). É normal e não gera alertas.
 
-**Tenant (Inquilino)**:
-A entidade formal e faturável do sistema (Produtor, Transportadora Logix, Comprador) que possui login e cujos dados são isolados no banco de dados via RLS.
-_Avoid_: Usuário, Empresa
+**Tenant**:
+A empresa que paga pelo sistema e tem login (como uma transportadora ou produtor). Os dados de um tenant não se misturam com os dos outros no banco.
 
-**Motorista Efêmero**:
-O motorista autônomo subcontratado. Ele age com a posse física provisória em nome de uma Transportadora formal, interagindo com o sistema apenas via Portal Público (sem possuir uma conta própria).
-_Avoid_: Sub-contratado, Motorista Terceiro
+**Motorista Temporário (Efêmero)**:
+O motorista que faz o frete, mas não tem conta no sistema. Ele só acessa um link temporário para registrar a carga e pronto.
 
 **Signed URL**:
-Link temporário e criptográfico embutido no QR Code da remessa. Permite acesso ao Portal Público para realização do Handshake por motoristas efêmeros, bloqueando acesso ao histórico de telemetria.
-_Avoid_: Link Público, Token URL
+O link seguro que vem no QR Code da carga. Deixa o motorista temporário registrar que pegou a carga sem precisar de login, mas não deixa ele ver o histórico de temperatura.
 
-**Mutation Queue Persistente**:
-Fila local no dispositivo móvel (app) que armazena intenções de mudança de estado (ex: Handshake) com o timestamp exato em que a ação ocorreu (offline_timestamp), sincronizando automaticamente quando a conectividade é restabelecida.
+**Fila Local de Sincronização**:
+Como nem sempre tem internet na estrada, o aplicativo salva quando o motorista escaneia a carga e guarda o horário certo. Quando a internet volta, o app envia os dados para o servidor.
 
-**Cloud-Only App**:
-Abordagem onde o aplicativo interage com o ecossistema estritamente através das APIs em nuvem, não estabelecendo conexões diretas (ex: BLE/Bluetooth) com o hardware embarcado na remessa. Em áreas sem conexão, o usuário deve confiar nos alertas físicos (LEDs/Buzzers) do próprio dispositivo da carga.
+**App Baseado em Nuvem (Cloud-Only)**:
+O aplicativo de celular não conecta direto no sensor da carga por Bluetooth. Tudo vai pra nuvem primeiro. Se estiver sem sinal, o motorista tem que olhar os LEDs do próprio sensor para ver se está tudo bem.
 
-**Rastreio em Eventos Discretos (GPS Discreto)**:
-Captura de localização do aplicativo móvel realizada apenas durante interações pontuais do motorista (ex: escaneamento de QR Code), deixando a coleta contínua de GPS para o hardware logístico. Preserva a bateria do smartphone e simplifica o gerenciamento de permissões (Foreground apenas).
+**Rastreio Simples de GPS**:
+O app só pega a localização do motorista quando ele faz alguma ação (tipo escanear o QR Code). O rastreio contínuo do trajeto fica por conta do sensor logístico, para não gastar a bateria do celular do motorista.

@@ -1,33 +1,30 @@
-# Phase 3 Mobile App Specification
+# Especificação do Aplicativo Mobile - Fase 3
 
-## Problem Statement
-O motorista na estrada frequentemente se depara com a falta de sinal de celular (Offline). Sem um aplicativo preparado (Offline-First), ele não consegue realizar o Handshake escaneando o QR Code da remessa. Além disso, se a sincronização ocorrer horas depois e o sistema registrar a hora atual do upload em vez da hora exata do escaneamento, a Transportadora perderá respaldo legal em caso de sinistro e seguros de cargas. O aplicativo também não pode drenar a bateria rodando GPS em background o tempo todo, e não pode travar a UX forçando integrações complexas por Bluetooth para alertas locais.
+## Problema
+Motoristas na estrada frequentemente perdem o sinal de celular. Se o aplicativo não funcionar offline, eles não vão conseguir registrar o recebimento da carga (Handshake). Além disso, se o sistema só registrar o horário em que a internet voltou em vez do horário exato do recebimento, a transportadora pode ter problemas com a seguradora. Por fim, o aplicativo não pode gastar muita bateria com GPS nem exigir que o motorista faça pareamento Bluetooth com o sensor.
 
-## Solution
-Criaremos um App Mobile em React Native/Expo que atua de forma discreta, puramente na camada de nuvem (Cloud-Only). O Handshake usará uma fila local (Zustand) que grava o `offline_timestamp` com exatidão legal e sincroniza em background quando a rede retornar. O GPS será coletado exclusivamente em primeiro plano (Foreground) durante eventos de mutação, deixando o rastreamento pesado a cargo do próprio veículo.
+## Solução
+Vamos criar um aplicativo em React Native/Expo focado apenas na comunicação com o servidor. O Handshake vai usar uma fila local no celular que salva o horário exato (`offline_timestamp`) e envia os dados assim que a internet voltar. O GPS só será usado rapidamente quando o motorista fizer alguma ação no app, deixando o rastreamento principal para o hardware da carreta.
 
-## User Stories
-1. As a Motorista Efêmero, I want to scan a shipment's QR code without an internet connection, so that I don't get blocked at a remote farm.
-2. As a Transportadora, I want the system to record the exact offline timestamp of the physical handover, so that legal and insurance liabilities are accurately audited.
-3. As a Motorista Efêmero, I want the app to sync my pending handshakes automatically when 4G returns, so that I don't have to remember to click "sync".
-4. As a Motorista Efêmero, I want the app to only track my location when I actively interact with it, so that my personal phone's battery isn't drained during a 48-hour trip.
-5. As a Motorista Efêmero, I want to view my current shipment's status based strictly on the cloud data, so that I don't need complex Bluetooth pairing steps with the physical cargo sensor.
+## Histórias de Usuário
+1. Como motorista, quero escanear o QR Code de uma carga mesmo sem internet, para não ficar travado na fazenda.
+2. Como transportadora, quero que o sistema grave o horário exato da leitura offline, para auditorias e seguro.
+3. Como motorista, quero que o app envie os dados sozinho quando o sinal voltar, para não ter que lembrar de clicar em sincronizar.
+4. Como motorista, quero que o app pegue meu GPS apenas quando eu o uso, para não gastar toda a bateria do celular durante a viagem.
+5. Como motorista, quero ver o status da carga pela nuvem, para não ter dor de cabeça conectando o celular no Bluetooth do sensor.
 
-## Implementation Decisions
-- **Fila Offline**: Utilizaremos Zustand + AsyncStorage para enfileirar as ações de Handshake.
-- **Backend Schema Change**: O payload Pydantic `EphemeralDriverPayload` aceitará a variável `offline_timestamp`.
-- **FSM Timestamp**: A máquina de estados registrará o campo `initiated_at` usando o `offline_timestamp` recebido; se nulo, usará `datetime.utcnow()`.
-- **Nenhum BLE**: Todo alerta virá da API FastAPI (Polling ou Websocket ativo quando em tela). Se offline, o motorista confiará nas luzes físicas da carreta.
-- **Localização Discreta**: Usaremos `expo-location` apenas em Foreground, disparando junto aos eventos manuais do motorista.
+## Decisões Técnicas
+- **Fila Offline**: Uso de Zustand e AsyncStorage para guardar os recebimentos.
+- **Mudança na API**: O endpoint vai aceitar o parâmetro `offline_timestamp`.
+- **Registro no Banco**: Se a API receber um `offline_timestamp`, vai usar ele. Se não, vai usar o horário atual do servidor.
+- **Sem Bluetooth**: Os alertas vão vir da API (Polling ou Websocket) quando o app estiver aberto. Se não tiver internet, o motorista olha os LEDs do sensor na carreta.
+- **GPS sob demanda**: O pacote `expo-location` só vai rodar no momento da leitura do QR Code.
 
-## Testing Decisions
-- **Seam 1 (Backend Auditoria Retroativa)**: Testaremos o endpoint `/api/public/handshake` enviando um payload com `offline_timestamp` forjado 2 horas no passado. O banco de dados deve aprovar e a query de validação deve cravar que `initiated_at` respeitou retroativamente o timestamp, e não o relógio atual do servidor.
-- **Seam 2 (Mobile Queue Sync)**: (A ser implementado no front) Simularemos falta de rede no celular, adicionaremos o Handshake, restauraremos a rede e validaremos se o Request final foi enviado.
+## Como Testar
+- **Teste de Auditoria (Backend)**: Enviar para a API um registro com o `offline_timestamp` apontando para 2 horas atrás. O banco deve aceitar e salvar esse horário antigo como a hora oficial do evento, ignorando o horário atual do servidor.
+- **Teste de Sincronização (Mobile)**: Desligar a internet do celular, ler o QR Code, preencher os dados, religar a internet e verificar se o app mandou a requisição para o servidor automaticamente.
 
-## Out of Scope
-- Rastreamento contínuo de background location no celular.
-- Integração Bluetooth com o sensor físico da carga.
-- Cadastro/Login de motoristas no aplicativo (será sempre via QR Code).
-
-## Further Notes
-O sucesso desta arquitetura reside em manter a UX a mais indolor possível para caminhoneiros. Bateria duradoura e fluidez offline são as métricas de sucesso.
+## Fora de Escopo
+- Rastreamento contínuo de localização (background location) pelo celular.
+- Conexão Bluetooth com o sensor da carga.
+- Cadastro e login para motoristas (será tudo via QR Code com link temporário).
