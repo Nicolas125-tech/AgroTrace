@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from src.core.config import settings
 from src.domain.models import Base
 
-DB_URL = settings.DATABASE_URL
+DB_URL = os.environ.get("DATABASE_URL", "sqlite:///:memory:")
 engine = create_engine(DB_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -70,7 +70,7 @@ class Telemetry(Base):
 hypertable_ddl = DDL(
     "SELECT create_hypertable('telemetry', 'timestamp', if_not_exists => TRUE);"
 )
-event.listen(Telemetry.__table__, "after_create", hypertable_ddl)
+event.listen(Telemetry.__table__, "after_create", hypertable_ddl.execute_if(dialect="postgresql"))
 
 shipments_rls_ddl = DDL("""
     ALTER TABLE shipments ENABLE ROW LEVEL SECURITY;
@@ -81,4 +81,4 @@ shipments_rls_ddl = DDL("""
     USING (tenant_id = current_setting('app.current_tenant', true)::integer)
     WITH CHECK (tenant_id = current_setting('app.current_tenant', true)::integer);
 """)
-event.listen(Shipment.__table__, "after_create", shipments_rls_ddl)
+event.listen(Shipment.__table__, "after_create", shipments_rls_ddl.execute_if(dialect="postgresql"))
