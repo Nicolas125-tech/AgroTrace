@@ -1,6 +1,6 @@
 import os
 
-os.environ['SECRET_KEY'] = 'test-secret-key-123'
+os.environ["SECRET_KEY"] = "test-secret-key-123"
 
 import pytest
 from sqlalchemy import create_engine
@@ -12,6 +12,7 @@ from src.domain.models import Base
 DB_URL = settings.DATABASE_URL
 engine = create_engine(DB_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @pytest.fixture(scope="function")
 def db_session():
