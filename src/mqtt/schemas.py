@@ -10,12 +10,12 @@ class HandshakePayload(BaseModel):
     timestamp: datetime
 
 
-
 class TelemetryReading(BaseModel):
     timestamp: datetime
     temperature: int
     humidity: int | None = None
     gps: str | None = None
+
 
 class TelemetryBatchPayload(BaseModel):
     shipment_id: int
