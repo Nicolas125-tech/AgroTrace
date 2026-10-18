@@ -20,7 +20,7 @@ def test_initiate_transfer(db_session):
     db_session.add(profile)
     db_session.commit()
 
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=2)
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=2, tenant_id=1)
     db_session.add(shipment)
     db_session.commit()
 
@@ -34,7 +34,8 @@ def test_fast_path_handshake_rejects_and_breaches(db_session):
         name="Coffee", max_temp=25, min_temp=10, continuous_exposure_limit_minutes=60
     )
     db_session.add(profile)
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=24)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
     db_session.add(shipment)
     db_session.commit()
 
@@ -53,7 +54,8 @@ def test_telemetry_insert_hypertable(db_session):
         name="Test", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=1
     )
     db_session.add(profile)
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=1)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=1, tenant_id=1)
     db_session.add(shipment)
     db_session.commit()
 
@@ -68,3 +70,109 @@ def test_telemetry_insert_hypertable(db_session):
 def test_initiate_transfer_invalid_shipment(db_session):
     with pytest.raises(ValueError, match="Shipment not found"):
         initiate_transfer(db_session, shipment_id=999)
+
+
+def test_resolve_quarantined_transfer_accepted(db_session):
+    # Setup
+    profile = CargoProfile(
+        name="Apples", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    transfer.status = CustodyStatus.QUARANTINED
+    db_session.commit()
+
+    from src.services.custody_service import resolve_quarantined_transfer
+
+    resolved_transfer = resolve_quarantined_transfer(
+        db_session, transfer.id, CustodyStatus.ACCEPTED
+    )
+
+    assert resolved_transfer.status == CustodyStatus.ACCEPTED
+    db_session.refresh(shipment)
+    assert shipment.status == ShipmentStatus.IN_TRANSIT
+
+
+def test_resolve_quarantined_transfer_rejected(db_session):
+    # Setup
+    profile = CargoProfile(
+        name="Bananas", max_temp=15, min_temp=5, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    transfer.status = CustodyStatus.QUARANTINED
+    db_session.commit()
+
+    from src.services.custody_service import resolve_quarantined_transfer
+
+    resolved_transfer = resolve_quarantined_transfer(
+        db_session, transfer.id, CustodyStatus.REJECTED
+    )
+
+    assert resolved_transfer.status == CustodyStatus.REJECTED
+    db_session.refresh(shipment)
+    assert shipment.status == ShipmentStatus.BREACHED
+
+
+def test_resolve_quarantined_transfer_invalid_status(db_session):
+    # Setup
+    profile = CargoProfile(
+        name="Cherries", max_temp=5, min_temp=0, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    transfer.status = CustodyStatus.QUARANTINED
+    db_session.commit()
+
+    from src.services.custody_service import resolve_quarantined_transfer
+
+    with pytest.raises(ValueError, match="Must resolve to ACCEPTED or REJECTED"):
+        resolve_quarantined_transfer(
+            db_session, transfer.id, CustodyStatus.PENDING_SYNC
+        )
+
+
+def test_resolve_quarantined_transfer_not_found(db_session):
+    from src.services.custody_service import resolve_quarantined_transfer
+
+    with pytest.raises(ValueError, match="Transfer not found"):
+        resolve_quarantined_transfer(
+            db_session, transfer_id=999, new_status=CustodyStatus.ACCEPTED
+        )
+
+
+def test_resolve_quarantined_transfer_not_quarantined(db_session):
+    # Setup
+    profile = CargoProfile(
+        name="Dates", max_temp=25, min_temp=15, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    # transfer.status is PENDING_SYNC by default
+
+    from src.services.custody_service import resolve_quarantined_transfer
+
+    with pytest.raises(
+        ValueError, match="Only QUARANTINED transfers can be manually resolved."
+    ):
+        resolve_quarantined_transfer(db_session, transfer.id, CustodyStatus.ACCEPTED)
