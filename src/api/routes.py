@@ -150,8 +150,6 @@ def get_shipment_route(
     return get_simplified_route(db, id, bucket_interval)
 
 
-from pydantic import BaseModel
-
 from src.core.security import generate_signed_token, verify_signed_token
 
 
