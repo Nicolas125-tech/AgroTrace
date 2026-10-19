@@ -79,19 +79,19 @@ def timeout_pending_transfers(
     """
     cutoff_time = datetime.utcnow() - timedelta(hours=timeout_hours)
 
-    stale_transfers = (
-        db.query(CustodyTransfer)
-        .filter(
-            CustodyTransfer.status == CustodyStatus.PENDING_SYNC,
-            CustodyTransfer.initiated_at < cutoff_time,
-        )
-        .all()
+    query = db.query(CustodyTransfer).filter(
+        CustodyTransfer.status == CustodyStatus.PENDING_SYNC,
+        CustodyTransfer.initiated_at < cutoff_time,
+    )
+    stale_transfers = query.all()
+    query.update(
+        {CustodyTransfer.status: CustodyStatus.QUARANTINED}, synchronize_session=False
     )
 
-    for transfer in stale_transfers:
-        transfer.status = CustodyStatus.QUARANTINED
-
     db.commit()
+    # Refresh the instances if they are in the session (though synchronize_session=False skips it for speed)
+    for t in stale_transfers:
+        t.status = CustodyStatus.QUARANTINED
     return stale_transfers
 
 

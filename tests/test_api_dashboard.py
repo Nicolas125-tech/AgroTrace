@@ -14,9 +14,9 @@ def test_dashboard_endpoints(db_session):
         name="DashTest", max_temp=5, min_temp=0, continuous_exposure_limit_minutes=15
     )
     db_session.add(profile)
-    db_session.commit()
+    db_session.flush()
 
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=2, tenant_id=1)
+    shipment = Shipment(tenant_id=1, profile_id=profile.id, grace_period_hours=2)
     db_session.add(shipment)
     db_session.commit()
 

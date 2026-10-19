@@ -1,5 +1,6 @@
-import pytest
 from datetime import datetime
+
+import pytest
 
 from src.domain.models import (
     CargoProfile,
@@ -18,9 +19,9 @@ def test_initiate_transfer(db_session):
         name="Protein", max_temp=-18, min_temp=-30, continuous_exposure_limit_minutes=15
     )
     db_session.add(profile)
-    db_session.commit()
+    db_session.flush()
 
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=2)
+    shipment = Shipment(tenant_id=1, profile_id=profile.id, grace_period_hours=2)
     db_session.add(shipment)
     db_session.commit()
 
@@ -34,7 +35,8 @@ def test_fast_path_handshake_rejects_and_breaches(db_session):
         name="Coffee", max_temp=25, min_temp=10, continuous_exposure_limit_minutes=60
     )
     db_session.add(profile)
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=24)
+    db_session.flush()
+    shipment = Shipment(tenant_id=1, profile_id=profile.id, grace_period_hours=24)
     db_session.add(shipment)
     db_session.commit()
 
@@ -53,7 +55,8 @@ def test_telemetry_insert_hypertable(db_session):
         name="Test", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=1
     )
     db_session.add(profile)
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=1)
+    db_session.flush()
+    shipment = Shipment(tenant_id=1, profile_id=profile.id, grace_period_hours=1)
     db_session.add(shipment)
     db_session.commit()
 
