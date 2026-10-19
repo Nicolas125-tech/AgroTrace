@@ -9,17 +9,16 @@ def ingest_telemetry_batch(db: Session, payload: TelemetryBatchPayload):
     if not payload.readings:
         return
 
-    records = []
-    for reading in payload.readings:
-        records.append(
-            {
-                "timestamp": reading.timestamp,
-                "shipment_id": payload.shipment_id,
-                "temperature": reading.temperature,
-                "humidity": reading.humidity,
-                "gps": reading.gps,
-            }
-        )
+    records = [
+        {
+            "timestamp": reading.timestamp,
+            "shipment_id": payload.shipment_id,
+            "temperature": reading.temperature,
+            "humidity": reading.humidity,
+            "gps": reading.gps,
+        }
+        for reading in payload.readings
+    ]
 
     # Usando execute com dicionários garante inserção em bulk otimizada (executemany)
     db.execute(insert(Telemetry), records)
