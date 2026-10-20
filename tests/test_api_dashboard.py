@@ -115,3 +115,16 @@ def test_dashboard_endpoints_idor(db_session):
     assert res.status_code == 200
     route_data = res.json()
     assert len(route_data) == 0  # IDOR blocked!
+
+
+def test_get_shipment_not_found(db_session):
+    # Login as Tenant 1
+    from src.core.security import generate_tenant_token
+
+    token = generate_tenant_token(tenant_id=1, role="producer")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Test GET /api/shipments/{id} with non-existent ID
+    res = client.get("/api/shipments/99999", headers=headers)
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Shipment not found"
