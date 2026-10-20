@@ -1,12 +1,13 @@
 import json
 import logging
-
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
-
 from src.db.session import SessionLocal
 from src.mqtt.schemas import HandshakePayload
 from src.services.custody_service import process_fast_path_handshake
+from src.mqtt.schemas import TelemetryBatchPayload
+from src.services.telemetry_service import ingest_telemetry_batch
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +33,6 @@ def process_handshake_message(payload_bytes: bytes):
             db.close()
     except (json.JSONDecodeError, ValidationError) as e:
         logger.error(f"Invalid MQTT payload: {e}")
-
-
-from src.mqtt.schemas import TelemetryBatchPayload
-from src.services.telemetry_service import ingest_telemetry_batch
 
 
 def process_telemetry_message(payload_bytes: bytes):

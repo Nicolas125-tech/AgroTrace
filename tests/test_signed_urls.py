@@ -11,7 +11,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 client = TestClient(app)
 
 
-def test_signed_urls_integration(rls_db_session):
+def test_signed_urls_integration(db_session):
     # Setup Data com a Transportadora Logix (Tenant 1)
     tenant_context.set(1)
     session = TestingSessionLocal()
