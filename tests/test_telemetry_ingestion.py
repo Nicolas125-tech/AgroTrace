@@ -20,7 +20,7 @@ def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
     db_session.add(profile)
     db_session.commit()
 
-    shipment = Shipment(profile_id=profile.id, grace_period_hours=2)
+    shipment = Shipment(tenant_id=1, profile_id=profile.id, grace_period_hours=2)
     db_session.add(shipment)
     db_session.commit()
 
