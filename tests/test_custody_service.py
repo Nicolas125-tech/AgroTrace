@@ -176,3 +176,110 @@ def test_resolve_quarantined_transfer_not_quarantined(db_session):
         ValueError, match="Only QUARANTINED transfers can be manually resolved."
     ):
         resolve_quarantined_transfer(db_session, transfer.id, CustodyStatus.ACCEPTED)
+
+
+def test_timeout_pending_transfers_stale(db_session):
+    from src.services.custody_service import timeout_pending_transfers
+    from datetime import timedelta
+
+    # Setup
+    profile = CargoProfile(
+        name="Oranges", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    # Make it stale (>24 hours)
+    transfer.initiated_at = datetime.utcnow() - timedelta(hours=25)
+    db_session.commit()
+
+    stale_transfers = timeout_pending_transfers(db_session, timeout_hours=24)
+
+    assert len(stale_transfers) == 1
+    assert stale_transfers[0].id == transfer.id
+    db_session.refresh(transfer)
+    assert transfer.status == CustodyStatus.QUARANTINED
+
+
+def test_timeout_pending_transfers_fresh(db_session):
+    from src.services.custody_service import timeout_pending_transfers
+    from datetime import timedelta
+
+    # Setup
+    profile = CargoProfile(
+        name="Lemons", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    # Make it fresh (<24 hours)
+    transfer.initiated_at = datetime.utcnow() - timedelta(hours=23)
+    db_session.commit()
+
+    stale_transfers = timeout_pending_transfers(db_session, timeout_hours=24)
+
+    assert len(stale_transfers) == 0
+    db_session.refresh(transfer)
+    assert transfer.status == CustodyStatus.PENDING_SYNC
+
+
+def test_timeout_pending_transfers_ignored_statuses(db_session):
+    from src.services.custody_service import timeout_pending_transfers
+    from datetime import timedelta
+
+    # Setup
+    profile = CargoProfile(
+        name="Limes", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    # Make it stale but ACCEPTED
+    transfer.initiated_at = datetime.utcnow() - timedelta(hours=25)
+    transfer.status = CustodyStatus.ACCEPTED
+    db_session.commit()
+
+    stale_transfers = timeout_pending_transfers(db_session, timeout_hours=24)
+
+    assert len(stale_transfers) == 0
+    db_session.refresh(transfer)
+    assert transfer.status == CustodyStatus.ACCEPTED
+
+
+def test_timeout_pending_transfers_custom_timeout(db_session):
+    from src.services.custody_service import timeout_pending_transfers
+    from datetime import timedelta
+
+    # Setup
+    profile = CargoProfile(
+        name="Peaches", max_temp=10, min_temp=0, continuous_exposure_limit_minutes=60
+    )
+    db_session.add(profile)
+    db_session.flush()
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=24, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    transfer = initiate_transfer(db_session, shipment.id)
+    # Make it stale according to a custom 12-hour timeout
+    transfer.initiated_at = datetime.utcnow() - timedelta(hours=13)
+    db_session.commit()
+
+    stale_transfers = timeout_pending_transfers(db_session, timeout_hours=12)
+
+    assert len(stale_transfers) == 1
+    assert stale_transfers[0].id == transfer.id
+    db_session.refresh(transfer)
+    assert transfer.status == CustodyStatus.QUARANTINED
