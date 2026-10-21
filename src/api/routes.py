@@ -5,10 +5,20 @@ from src.db.session import get_db
 from src.domain.models import CustodyStatus, Shipment
 from src.services.custody_service import initiate_transfer, resolve_quarantined_transfer
 
-router = APIRouter()
-
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
+from pydantic import BaseModel
+from src.core.security import (
+    generate_tenant_token,
+    verify_password,
+    generate_signed_token,
+    verify_signed_token,
+)
+from src.domain.models import Tenant, ShipmentStatus
+from datetime import datetime
+
+router = APIRouter()
+
 
 security = HTTPBearer()
 
@@ -47,12 +57,6 @@ def scan_qr_code(id: int, db: Session = Depends(get_authenticated_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-from pydantic import BaseModel
-
-from src.core.security import generate_tenant_token, verify_password
-from src.domain.models import Tenant
-
-
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -80,9 +84,6 @@ def resolve_quarantined(
         return {"status": "success", "new_status": transfer.status}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-from src.domain.models import ShipmentStatus
 
 
 class ShipmentListItemView(BaseModel):
@@ -150,11 +151,6 @@ def get_shipment_route(
     return get_simplified_route(db, id, bucket_interval)
 
 
-from pydantic import BaseModel
-
-from src.core.security import generate_signed_token, verify_signed_token
-
-
 class PublicShipmentView(BaseModel):
     id: int
     status: str
@@ -197,9 +193,6 @@ def public_handshake_view(token: str, db: Session = Depends(get_db)):
     return PublicShipmentView(
         id=shipment.id, status=shipment.status.value, tenant_id=shipment.tenant_id
     )
-
-
-from datetime import datetime
 
 
 class EphemeralDriverPayload(BaseModel):

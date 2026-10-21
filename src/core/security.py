@@ -3,6 +3,8 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from src.core.config import settings
 
 # Em produção, a secret key vem do vault/ambiente
+from passlib.context import CryptContext
+
 SECRET_KEY = settings.SECRET_KEY
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
@@ -24,8 +26,6 @@ def verify_signed_token(token: str, max_age: int = 86400) -> dict:
     except BadSignature:
         raise ValueError("Invalid token signature")
 
-
-from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
