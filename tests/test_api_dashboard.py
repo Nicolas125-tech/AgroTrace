@@ -1,3 +1,5 @@
+import pytest
+from src.core.config import settings
 from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
@@ -8,6 +10,10 @@ from src.domain.models import CargoProfile, Shipment, Telemetry
 client = TestClient(app)
 
 
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL,
+    reason="Requires TimescaleDB time_bucket function",
+)
 def test_dashboard_endpoints(db_session):
     # Setup Data
     profile = CargoProfile(
@@ -73,6 +79,10 @@ def test_dashboard_endpoints(db_session):
     assert "lng" in route_data[0]
 
 
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL,
+    reason="Requires TimescaleDB time_bucket function",
+)
 def test_dashboard_endpoints_idor(db_session):
     # Setup Data - Create a shipment for tenant 2, but we will login as tenant 1
     profile = CargoProfile(
@@ -126,5 +136,71 @@ def test_get_shipment_not_found(db_session):
 
     # Test GET /api/shipments/{id} with non-existent ID
     res = client.get("/api/shipments/99999", headers=headers)
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Shipment not found"
+
+
+def test_generate_qr_url(db_session):
+    # Setup Data
+    profile = CargoProfile(
+        name="QRTest", max_temp=5, min_temp=0, continuous_exposure_limit_minutes=15
+    )
+    db_session.add(profile)
+    db_session.commit()
+
+    shipment = Shipment(profile_id=profile.id, grace_period_hours=2, tenant_id=1)
+    db_session.add(shipment)
+    db_session.commit()
+
+    # Login as Tenant 1
+    from src.core.security import generate_tenant_token, verify_signed_token
+
+    token = generate_tenant_token(tenant_id=1, role="producer")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Generate QR URL
+    res = client.post(f"/api/shipments/{shipment.id}/generate-qr", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "url" in data
+    assert "token" in data
+    assert data["url"] == f"https://agrotrace.com/handshake?token={data['token']}"
+
+    # Verify the token
+    payload = verify_signed_token(data["token"])
+    assert payload["shipment_id"] == shipment.id
+    assert payload["tenant_id"] == 1
+
+
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL, reason="RLS is not supported in SQLite"
+)
+def test_generate_qr_url_not_found_or_idor(db_session):
+    # Setup Data - Create a shipment for tenant 2
+    profile = CargoProfile(
+        name="QRTestIDOR", max_temp=5, min_temp=0, continuous_exposure_limit_minutes=15
+    )
+    db_session.add(profile)
+    db_session.commit()
+
+    shipment_t2 = Shipment(profile_id=profile.id, grace_period_hours=2, tenant_id=2)
+    db_session.add(shipment_t2)
+    db_session.commit()
+
+    # Login as Tenant 1
+    from src.core.security import generate_tenant_token
+
+    token = generate_tenant_token(tenant_id=1, role="producer")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Attempt to generate QR for tenant 2's shipment (IDOR check)
+    # The current code uses a filter by shipment ID with RLS implicitly applied via the DB session.
+    # Therefore, we should expect a 404 since tenant 1 cannot see tenant 2's shipment.
+    res = client.post(f"/api/shipments/{shipment_t2.id}/generate-qr", headers=headers)
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Shipment not found"
+
+    # Attempt to generate QR for a non-existent shipment
+    res = client.post("/api/shipments/99999/generate-qr", headers=headers)
     assert res.status_code == 404
     assert res.json()["detail"] == "Shipment not found"
