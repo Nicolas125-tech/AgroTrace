@@ -1,3 +1,5 @@
+import pytest
+from src.core.config import settings
 import json
 import time
 from datetime import datetime
@@ -9,6 +11,10 @@ from src.domain.models import CargoProfile, Shipment, Telemetry
 from src.mqtt.client import MQTT_BROKER, MQTT_PORT, TELEMETRY_TOPIC
 
 
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL,
+    reason="Requires Mosquitto broker which is not available in pure sqlite test environment",
+)
 def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
     # Setup test data
     profile = CargoProfile(

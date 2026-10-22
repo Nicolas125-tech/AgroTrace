@@ -1,3 +1,4 @@
+from src.core.config import settings
 import pytest
 from sqlalchemy.orm import sessionmaker
 
@@ -20,6 +21,10 @@ def rls_db_session():
     Base.metadata.drop_all(bind=engine)
 
 
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL,
+    reason="Requires Postgres RLS which is not available in SQLite",
+)
 def test_tenant_data_isolation(rls_db_session):
     # Injeta perfil público no banco (sem RLS)
     profile = CargoProfile(

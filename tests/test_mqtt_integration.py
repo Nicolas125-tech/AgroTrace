@@ -1,3 +1,4 @@
+from src.core.config import settings
 import json
 import time
 from datetime import datetime
@@ -25,6 +26,10 @@ def mqtt_client_fixture():
     client.disconnect()
 
 
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL,
+    reason="Requires Mosquitto broker which is not available in pure sqlite test environment",
+)
 def test_mqtt_handshake_integration(db_session, mqtt_client_fixture):
     # Setup test data no PostgreSQL real
     profile = CargoProfile(
