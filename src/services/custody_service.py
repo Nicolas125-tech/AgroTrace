@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -27,7 +27,9 @@ def initiate_transfer(
     transfer = CustodyTransfer(
         shipment_id=shipment_id,
         status=CustodyStatus.PENDING_SYNC,
-        initiated_at=offline_timestamp if offline_timestamp else datetime.utcnow(),
+        initiated_at=offline_timestamp
+        if offline_timestamp
+        else datetime.now(timezone.utc),
         driver_cpf=driver_cpf,
         driver_name=driver_name,
         vehicle_plate=vehicle_plate,
@@ -77,7 +79,7 @@ def timeout_pending_transfers(
     """
     Cron job logic: finds PENDING_SYNC > 24h and moves them to QUARANTINED.
     """
-    cutoff_time = datetime.utcnow() - timedelta(hours=timeout_hours)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=timeout_hours)
 
     stale_transfers = (
         db.query(CustodyTransfer)

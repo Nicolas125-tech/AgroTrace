@@ -33,8 +33,10 @@ def test_seam3_ephemeral_handshake(db_session):
 
     import datetime
 
-    retroactive_time = datetime.datetime.utcnow() - datetime.timedelta(hours=2)
-    retroactive_iso = retroactive_time.isoformat() + "Z"
+    retroactive_time = datetime.datetime.now(
+        datetime.timezone.utc
+    ) - datetime.timedelta(hours=2)
+    retroactive_iso = retroactive_time.isoformat().replace("+00:00", "Z")
 
     payload = {
         "driver_cpf": "123.456.789-00",
@@ -66,7 +68,7 @@ def test_seam3_ephemeral_handshake(db_session):
     # Auditoria crucial: O banco cravou a hora do celular (offline), não a hora do request!
     # Removing microseconds for easy comparison
     assert transfer.initiated_at.replace(microsecond=0) == retroactive_time.replace(
-        microsecond=0
+        microsecond=0, tzinfo=None
     )
 
     # E claro, o Shipment foi modificado e está vinculado corretamente à Logix (Tenant 1)

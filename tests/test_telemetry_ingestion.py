@@ -1,6 +1,7 @@
+import pytest
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from paho.mqtt import publish
 
@@ -9,6 +10,7 @@ from src.domain.models import CargoProfile, Shipment, Telemetry
 from src.mqtt.client import MQTT_BROKER, MQTT_PORT, TELEMETRY_TOPIC
 
 
+@pytest.mark.skipif('sqlite' in __import__('src.core.config').core.config.settings.DATABASE_URL, reason='Requires Mosquitto MQTT')
 def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
     # Setup test data
     profile = CargoProfile(
@@ -29,13 +31,13 @@ def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
         "shipment_id": shipment.id,
         "readings": [
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "temperature": -15,
                 "humidity": 50,
                 "gps": "-23.55,-46.63",
             },
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "temperature": -14,
                 "humidity": 52,
                 "gps": "-23.56,-46.64",
