@@ -45,18 +45,16 @@ def get_telemetry_downsampled(
 ):
     """Uses TimescaleDB time_bucket to downsample raw telemetry for charting performance."""
 
-    # Security Fix: Ensure tenant has access to this shipment via RLS before returning telemetry
-    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
-    if not shipment:
-        return []
-
     bucket = func.time_bucket(bucket_interval, Telemetry.timestamp).label("bucket")
+
+    # Security Fix: Join Shipment to ensure RLS policies are enforced natively
     stmt = (
         select(
             bucket,
             func.avg(Telemetry.temperature).label("avg_temp"),
             func.avg(Telemetry.humidity).label("avg_hum"),
         )
+        .join(Shipment, Shipment.id == Telemetry.shipment_id)
         .where(Telemetry.shipment_id == shipment_id)
         .group_by(bucket)
         .order_by(bucket.asc())
@@ -80,15 +78,13 @@ def get_simplified_route(
 ):
     """Downsamples GPS coordinates to reduce map rendering overhead."""
 
-    # Security Fix: Ensure tenant has access to this shipment via RLS before returning route
-    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
-    if not shipment:
-        return []
-
     # Since GPS is string, we pick the first/max coordinate occurring in the bucket interval
     bucket = func.time_bucket(bucket_interval, Telemetry.timestamp).label("bucket")
+
+    # Security Fix: Join Shipment to ensure RLS policies are enforced natively
     stmt = (
         select(bucket, func.max(Telemetry.gps).label("gps"))
+        .join(Shipment, Shipment.id == Telemetry.shipment_id)
         .where(Telemetry.shipment_id == shipment_id)
         .where(Telemetry.gps.isnot(None))
         .group_by(bucket)
