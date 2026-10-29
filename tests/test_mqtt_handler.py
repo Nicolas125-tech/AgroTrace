@@ -1,5 +1,6 @@
 import json
 import logging
+from unittest.mock import patch
 
 from src.mqtt.handler import process_handshake_message, process_telemetry_message
 
@@ -21,6 +22,31 @@ def test_process_handshake_validation_error(caplog):
     process_handshake_message(invalid_payload)
 
     assert "Invalid MQTT payload" in caplog.text
+
+
+def test_process_handshake_error_path(caplog):
+    caplog.set_level(logging.ERROR)
+
+    payload = json.dumps(
+        {
+            "shipment_id": 123,
+            "receiver_id": 456,
+            "has_breached": False,
+            "timestamp": "2023-10-27T10:00:00Z",
+        }
+    ).encode("utf-8")
+
+    with patch("src.mqtt.handler.process_fast_path_handshake") as mock_process:
+        mock_process.side_effect = Exception("Test Error")
+
+        with patch("src.mqtt.handler.SessionLocal") as mock_session_local:
+            mock_session = mock_session_local.return_value
+
+            process_handshake_message(payload)
+
+            mock_session.rollback.assert_called_once()
+
+    assert "Error processing handshake logic: Test Error" in caplog.text
 
 
 def test_process_telemetry_invalid_json(caplog):
