@@ -4,6 +4,33 @@ import logging
 from src.mqtt.handler import process_handshake_message, process_telemetry_message
 
 
+
+from unittest.mock import patch
+from datetime import datetime, timezone
+
+def test_process_handshake_happy_path(caplog):
+    caplog.set_level(logging.INFO)
+
+    valid_payload = json.dumps({
+        "shipment_id": 123,
+        "receiver_id": 456,
+        "has_breached": False,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }).encode("utf-8")
+
+    with patch("src.mqtt.handler.process_fast_path_handshake") as mock_process:
+        process_handshake_message(valid_payload)
+
+        # Verify the mock was called correctly
+        mock_process.assert_called_once()
+        args, kwargs = mock_process.call_args
+        assert kwargs.get("shipment_id") == 123
+        assert kwargs.get("has_breached") is False
+
+        # Verify the log message
+        assert "Successfully processed handshake for shipment 123" in caplog.text
+
+
 def test_process_handshake_invalid_json(caplog):
     caplog.set_level(logging.ERROR)
 
