@@ -33,9 +33,7 @@ def test_seam3_ephemeral_handshake(db_session):
 
     import datetime
 
-    retroactive_time = datetime.datetime.now(
-        datetime.timezone.utc
-    ) - datetime.timedelta(hours=2)
+    retroactive_time = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=2)
     retroactive_iso = retroactive_time.isoformat().replace("+00:00", "Z")
 
     payload = {

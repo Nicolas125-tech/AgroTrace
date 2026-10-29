@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from src.domain.models import (
     CargoProfile,
@@ -60,9 +60,7 @@ def test_telemetry_insert_hypertable(db_session):
     db_session.commit()
 
     # Insere leitura no Slow-Path (hypertable)
-    tel = Telemetry(
-        timestamp=datetime.now(timezone.utc), shipment_id=shipment.id, temperature=5
-    )
+    tel = Telemetry(timestamp=datetime.now(UTC), shipment_id=shipment.id, temperature=5)
     db_session.add(tel)
     db_session.commit()
 
@@ -196,7 +194,7 @@ def test_timeout_pending_transfers_stale(db_session):
 
     transfer = initiate_transfer(db_session, shipment.id)
     # Make it stale (>24 hours)
-    transfer.initiated_at = datetime.now(timezone.utc) - timedelta(hours=25)
+    transfer.initiated_at = datetime.now(UTC) - timedelta(hours=25)
     db_session.commit()
 
     stale_transfers = timeout_pending_transfers(db_session, timeout_hours=24)
@@ -223,7 +221,7 @@ def test_timeout_pending_transfers_fresh(db_session):
 
     transfer = initiate_transfer(db_session, shipment.id)
     # Make it fresh (<24 hours)
-    transfer.initiated_at = datetime.now(timezone.utc) - timedelta(hours=23)
+    transfer.initiated_at = datetime.now(UTC) - timedelta(hours=23)
     db_session.commit()
 
     stale_transfers = timeout_pending_transfers(db_session, timeout_hours=24)
@@ -249,7 +247,7 @@ def test_timeout_pending_transfers_ignored_statuses(db_session):
 
     transfer = initiate_transfer(db_session, shipment.id)
     # Make it stale but ACCEPTED
-    transfer.initiated_at = datetime.now(timezone.utc) - timedelta(hours=25)
+    transfer.initiated_at = datetime.now(UTC) - timedelta(hours=25)
     transfer.status = CustodyStatus.ACCEPTED
     db_session.commit()
 
@@ -276,7 +274,7 @@ def test_timeout_pending_transfers_custom_timeout(db_session):
 
     transfer = initiate_transfer(db_session, shipment.id)
     # Make it stale according to a custom 12-hour timeout
-    transfer.initiated_at = datetime.now(timezone.utc) - timedelta(hours=13)
+    transfer.initiated_at = datetime.now(UTC) - timedelta(hours=13)
     db_session.commit()
 
     stale_transfers = timeout_pending_transfers(db_session, timeout_hours=12)

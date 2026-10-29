@@ -1,6 +1,6 @@
 import pytest
 from src.core.config import settings
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from fastapi.testclient import TestClient
 
@@ -27,7 +27,7 @@ def test_dashboard_endpoints(db_session):
     db_session.commit()
 
     # Generate 60 readings (1 per minuto por 1 hora)
-    base_time = datetime.now(timezone.utc) - timedelta(hours=1)
+    base_time = datetime.now(UTC) - timedelta(hours=1)
     for i in range(60):
         t = Telemetry(
             timestamp=base_time + timedelta(minutes=i),
@@ -99,7 +99,7 @@ def test_dashboard_endpoints_idor(db_session):
     db_session.commit()
 
     t = Telemetry(
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         shipment_id=shipment_t2.id,
         temperature=4,
         humidity=50,
