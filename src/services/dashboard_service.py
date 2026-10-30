@@ -96,12 +96,14 @@ def get_simplified_route(
     for r in result:
         if r.gps:
             try:
-                lat, lng = r.gps.split(',', 1)
-                route.append({
-                    "lat": float(lat),
-                    "lng": float(lng),
-                    "timestamp": r.bucket.isoformat() if r.bucket else None
-                })
+                lat, lng = r.gps.split(",", 1)
+                route.append(
+                    {
+                        "lat": float(lat),
+                        "lng": float(lng),
+                        "timestamp": r.bucket.isoformat() if r.bucket else None,
+                    }
+                )
             except ValueError:
                 pass
     return route

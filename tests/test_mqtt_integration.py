@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 from paho.mqtt import publish
@@ -25,7 +25,10 @@ def mqtt_client_fixture():
     client.disconnect()
 
 
-@pytest.mark.skipif('sqlite' in __import__('src.core.config').core.config.settings.DATABASE_URL, reason='Requires Mosquitto MQTT')
+@pytest.mark.skipif(
+    "sqlite" in __import__("src.core.config").core.config.settings.DATABASE_URL,
+    reason="Requires Mosquitto MQTT",
+)
 def test_mqtt_handshake_integration(db_session, mqtt_client_fixture):
     # Setup test data no PostgreSQL real
     profile = CargoProfile(
@@ -49,7 +52,7 @@ def test_mqtt_handshake_integration(db_session, mqtt_client_fixture):
         "shipment_id": shipment.id,
         "receiver_id": 999,
         "has_breached": True,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     # Publica no broker (simulando a borda)
