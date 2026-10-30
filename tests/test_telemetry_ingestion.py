@@ -10,7 +10,10 @@ from src.domain.models import CargoProfile, Shipment, Telemetry
 from src.mqtt.client import MQTT_BROKER, MQTT_PORT, TELEMETRY_TOPIC
 
 
-@pytest.mark.skipif('sqlite' in __import__('src.core.config').core.config.settings.DATABASE_URL, reason='Requires Mosquitto MQTT')
+@pytest.mark.skipif(
+    "sqlite" in __import__("src.core.config").core.config.settings.DATABASE_URL,
+    reason="Requires Mosquitto MQTT",
+)
 def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
     # Setup test data
     profile = CargoProfile(
@@ -59,3 +62,18 @@ def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
     count = db.query(Telemetry).filter(Telemetry.shipment_id == shipment.id).count()
     assert count == 2
     db.close()
+
+
+def test_ingest_telemetry_batch_empty_readings(db_session):
+    from src.services.telemetry_service import ingest_telemetry_batch
+    from src.mqtt.schemas import TelemetryBatchPayload
+
+    # Create empty payload
+    payload = TelemetryBatchPayload(shipment_id=1, readings=[])
+
+    # Attempt to ingest the empty payload
+    ingest_telemetry_batch(db_session, payload)
+
+    # Verify no telemetry records were inserted
+    count = db_session.query(Telemetry).filter(Telemetry.shipment_id == 1).count()
+    assert count == 0
