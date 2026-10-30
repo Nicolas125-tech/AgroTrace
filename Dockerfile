@@ -21,5 +21,9 @@ COPY main.py ./
 # Porta que o Render mapeia automaticamente
 EXPOSE 8000
 
+# Configurar usuário não-root por segurança
+RUN adduser --disabled-password --gecos '' appuser &&     chown -R appuser:appuser /app
+USER appuser
+
 # Script de boot (utilizamos as variáveis de ambiente diretamente)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
