@@ -107,7 +107,10 @@ def resolve_quarantined_transfer(
         raise ValueError("Must resolve to ACCEPTED or REJECTED")
 
     transfer = (
-        db.query(CustodyTransfer).filter(CustodyTransfer.id == transfer_id).first()
+        db.query(CustodyTransfer)
+        .join(Shipment)
+        .filter(CustodyTransfer.id == transfer_id)
+        .first()
     )
     if not transfer:
         raise ValueError("Transfer not found")

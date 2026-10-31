@@ -1,8 +1,8 @@
-import pytest
 from datetime import datetime, timezone
 
 from src.domain.models import CargoProfile, CustodyTransfer, Shipment
 from src.services.dashboard_service import get_shipment_details
+
 
 def test_get_shipment_details_found(db_session):
     # Setup Data
@@ -10,7 +10,7 @@ def test_get_shipment_details_found(db_session):
         name="ServiceTestProfile",
         max_temp=10,
         min_temp=2,
-        continuous_exposure_limit_minutes=30
+        continuous_exposure_limit_minutes=30,
     )
     db_session.add(profile)
     db_session.flush()
@@ -22,7 +22,7 @@ def test_get_shipment_details_found(db_session):
     custody = CustodyTransfer(
         shipment_id=shipment.id,
         status="accepted",
-        initiated_at=datetime.now(timezone.utc)
+        initiated_at=datetime.now(timezone.utc),
     )
     db_session.add(custody)
     db_session.commit()
@@ -51,7 +51,7 @@ def test_get_shipment_details_no_custody(db_session):
         name="NoCustodyProfile",
         max_temp=5,
         min_temp=0,
-        continuous_exposure_limit_minutes=15
+        continuous_exposure_limit_minutes=15,
     )
     db_session.add(profile)
     db_session.flush()
