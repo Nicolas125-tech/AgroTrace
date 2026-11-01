@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "agrotrace"
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: str = "5432"
+    CORS_ORIGINS: list[str] = []
 
     @property
     def DATABASE_URL(self) -> str:
