@@ -43,7 +43,7 @@ export function ScannerScreen() {
   };
 
   const handleSubmit = () => {
-    if (!name || !cpf || !plate) {
+    if (!name.trim() || !cpf.trim() || !plate.trim()) {
       Alert.alert('Atenção', 'Por favor, preencha todos os campos obrigatórios para assumir a custódia da carga.');
       return;
     }
