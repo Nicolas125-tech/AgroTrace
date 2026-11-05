@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, select, Numeric
 from sqlalchemy.orm import Session
 
 from src.domain.models import CargoProfile, CustodyTransfer, Shipment, Telemetry
@@ -51,8 +51,12 @@ def get_telemetry_downsampled(
     stmt = (
         select(
             bucket,
-            func.avg(Telemetry.temperature).label("avg_temp"),
-            func.avg(Telemetry.humidity).label("avg_hum"),
+            func.round(func.cast(func.avg(Telemetry.temperature), Numeric), 2).label(
+                "avg_temp"
+            ),
+            func.round(func.cast(func.avg(Telemetry.humidity), Numeric), 2).label(
+                "avg_hum"
+            ),
         )
         .join(Shipment, Shipment.id == Telemetry.shipment_id)
         .where(Telemetry.shipment_id == shipment_id)
@@ -64,10 +68,8 @@ def get_telemetry_downsampled(
     return [
         {
             "timestamp": r.bucket.isoformat() if r.bucket else None,
-            "temperature": round(float(r.avg_temp), 2)
-            if r.avg_temp is not None
-            else None,
-            "humidity": round(float(r.avg_hum), 2) if r.avg_hum is not None else None,
+            "temperature": r.avg_temp,
+            "humidity": r.avg_hum,
         }
         for r in result
     ]
@@ -96,12 +98,14 @@ def get_simplified_route(
     for r in result:
         if r.gps:
             try:
-                lat, lng = r.gps.split(',', 1)
-                route.append({
-                    "lat": float(lat),
-                    "lng": float(lng),
-                    "timestamp": r.bucket.isoformat() if r.bucket else None
-                })
+                lat, lng = r.gps.split(",", 1)
+                route.append(
+                    {
+                        "lat": float(lat),
+                        "lng": float(lng),
+                        "timestamp": r.bucket.isoformat() if r.bucket else None,
+                    }
+                )
             except ValueError:
                 pass
     return route
