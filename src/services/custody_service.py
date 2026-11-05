@@ -90,8 +90,12 @@ def timeout_pending_transfers(
         .all()
     )
 
-    for transfer in stale_transfers:
-        transfer.status = CustodyStatus.QUARANTINED
+    if stale_transfers:
+        # Get IDs to avoid synchronization issues with naive/aware datetimes during bulk update evaluate
+        stale_ids = [t.id for t in stale_transfers]
+        db.query(CustodyTransfer).filter(
+            CustodyTransfer.id.in_(stale_ids)
+        ).update({"status": CustodyStatus.QUARANTINED}, synchronize_session="fetch")
 
     db.commit()
     return stale_transfers
