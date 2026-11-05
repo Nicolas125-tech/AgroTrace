@@ -10,11 +10,8 @@ from src.domain.models import CargoProfile, Shipment, Telemetry
 client = TestClient(app)
 
 
-@pytest.mark.skipif(
-    "sqlite" in settings.DATABASE_URL,
-    reason="Requires TimescaleDB time_bucket function",
-)
-def test_dashboard_endpoints(db_session):
+@pytest.fixture
+def dashboard_setup(db_session):
     # Setup Data
     profile = CargoProfile(
         name="DashTest", max_temp=5, min_temp=0, continuous_exposure_limit_minutes=15
@@ -44,34 +41,57 @@ def test_dashboard_endpoints(db_session):
     token = generate_tenant_token(tenant_id=1, role="producer")
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Test GET /api/shipments (list)
+    return {"shipment_id": shipment.id, "headers": headers}
+
+
+def test_list_shipments(dashboard_setup):
+    headers = dashboard_setup["headers"]
     res = client.get("/api/shipments", headers=headers)
     assert res.status_code == 200
     list_data = res.json()
     assert len(list_data) >= 1
     assert list_data[0]["status"] == "in_transit"
 
-    # Test GET /api/shipments with status filter
+
+def test_list_shipments_with_status_filter(dashboard_setup):
+    headers = dashboard_setup["headers"]
     res = client.get("/api/shipments?status=delivered", headers=headers)
     assert res.status_code == 200
     empty_list = res.json()
     assert len(empty_list) == 0
 
-    # Test GET /api/shipments/{id}
-    res = client.get(f"/api/shipments/{shipment.id}", headers=headers)
+
+def test_get_shipment(dashboard_setup):
+    shipment_id = dashboard_setup["shipment_id"]
+    headers = dashboard_setup["headers"]
+    res = client.get(f"/api/shipments/{shipment_id}", headers=headers)
     assert res.status_code == 200
     data = res.json()
     assert data["profile"]["name"] == "DashTest"
 
-    # Test GET /api/shipments/{id}/telemetry (default 5 minutos -> 60/5 = 12 buckets)
-    res = client.get(f"/api/shipments/{shipment.id}/telemetry", headers=headers)
+
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL,
+    reason="Requires TimescaleDB time_bucket function",
+)
+def test_get_shipment_telemetry(dashboard_setup):
+    shipment_id = dashboard_setup["shipment_id"]
+    headers = dashboard_setup["headers"]
+    res = client.get(f"/api/shipments/{shipment_id}/telemetry", headers=headers)
     assert res.status_code == 200
     telemetry_data = res.json()
     assert len(telemetry_data) == 12  # O downsampling mágico do TimescaleDB
     assert "temperature" in telemetry_data[0]
 
-    # Test GET /api/shipments/{id}/route (default 15 minutos -> 60/15 = 4 buckets)
-    res = client.get(f"/api/shipments/{shipment.id}/route", headers=headers)
+
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL,
+    reason="Requires TimescaleDB time_bucket function",
+)
+def test_get_shipment_route(dashboard_setup):
+    shipment_id = dashboard_setup["shipment_id"]
+    headers = dashboard_setup["headers"]
+    res = client.get(f"/api/shipments/{shipment_id}/route", headers=headers)
     assert res.status_code == 200
     route_data = res.json()
     assert len(route_data) == 4
