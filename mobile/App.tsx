@@ -1,16 +1,12 @@
-import React from 'react';
 import { StyleSheet, View, SafeAreaView, StatusBar, Text } from 'react-native';
 import { useNetworkSync } from './src/hooks/useNetworkSync';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { useSyncStore } from './src/store/useSyncStore';
-
 export default function App() {
   // Inicializa o Listener de Fila Offline globalmente
   useNetworkSync();
-
   const pendingHandshakes = useSyncStore((state) => state.pendingHandshakes);
   const isSyncing = useSyncStore((state) => state.isSyncing);
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -24,12 +20,10 @@ export default function App() {
           </Text>
         </View>
       </View>
-
       <ScannerScreen />
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
