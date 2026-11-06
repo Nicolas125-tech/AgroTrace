@@ -82,13 +82,19 @@ def get_simplified_route(
 
     # Since GPS is string, we pick the first/max coordinate occurring in the bucket interval
     bucket = func.time_bucket(bucket_interval, Telemetry.timestamp).label("bucket")
+    gps = func.max(Telemetry.gps)
 
     # Security Fix: Join Shipment to ensure RLS policies are enforced natively
     stmt = (
-        select(bucket, func.max(Telemetry.gps).label("gps"))
+        select(
+            bucket,
+            func.cast(func.split_part(gps, ",", 1), Numeric).label("lat"),
+            func.cast(func.split_part(gps, ",", 2), Numeric).label("lng"),
+        )
         .join(Shipment, Shipment.id == Telemetry.shipment_id)
         .where(Telemetry.shipment_id == shipment_id)
         .where(Telemetry.gps.isnot(None))
+        .where(Telemetry.gps.like("%,%"))
         .group_by(bucket)
         .order_by(bucket.asc())
     )
@@ -96,16 +102,11 @@ def get_simplified_route(
 
     route = []
     for r in result:
-        if r.gps:
-            try:
-                lat, lng = r.gps.split(",", 1)
-                route.append(
-                    {
-                        "lat": float(lat),
-                        "lng": float(lng),
-                        "timestamp": r.bucket.isoformat() if r.bucket else None,
-                    }
-                )
-            except ValueError:
-                pass
+        route.append(
+            {
+                "lat": float(r.lat) if r.lat is not None else None,
+                "lng": float(r.lng) if r.lng is not None else None,
+                "timestamp": r.bucket.isoformat() if r.bucket else None,
+            }
+        )
     return route
