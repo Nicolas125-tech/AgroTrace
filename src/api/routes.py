@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from src.db.session import get_db
 from src.domain.models import CustodyStatus, Shipment
@@ -7,6 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 from pydantic import BaseModel
 from src.core.security import generate_tenant_token, verify_password
+from src.core.rate_limiting import limiter
 from src.domain.models import Tenant
 from src.domain.models import ShipmentStatus
 from src.core.security import generate_signed_token, verify_signed_token
@@ -59,7 +60,10 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/api/auth/login")
-def login_tenant(payload: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login_tenant(
+    request: Request, payload: LoginRequest, db: Session = Depends(get_db)
+):
     tenant = db.query(Tenant).filter(Tenant.username == payload.username).first()
     if not tenant or not verify_password(payload.password, tenant.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
