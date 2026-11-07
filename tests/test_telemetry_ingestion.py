@@ -10,7 +10,10 @@ from src.domain.models import CargoProfile, Shipment, Telemetry
 from src.mqtt.client import MQTT_BROKER, MQTT_PORT, TELEMETRY_TOPIC
 
 
-@pytest.mark.skipif('sqlite' in __import__('src.core.config').core.config.settings.DATABASE_URL, reason='Requires Mosquitto MQTT')
+@pytest.mark.skipif(
+    "sqlite" in __import__("src.core.config").core.config.settings.DATABASE_URL,
+    reason="Requires Mosquitto MQTT",
+)
 def test_telemetry_mqtt_integration(db_session, mqtt_client_fixture):
     # Setup test data
     profile = CargoProfile(

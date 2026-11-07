@@ -25,7 +25,10 @@ def mqtt_client_fixture():
     client.disconnect()
 
 
-@pytest.mark.skipif('sqlite' in __import__('src.core.config').core.config.settings.DATABASE_URL, reason='Requires Mosquitto MQTT')
+@pytest.mark.skipif(
+    "sqlite" in __import__("src.core.config").core.config.settings.DATABASE_URL,
+    reason="Requires Mosquitto MQTT",
+)
 def test_mqtt_handshake_integration(db_session, mqtt_client_fixture):
     # Setup test data no PostgreSQL real
     profile = CargoProfile(

@@ -21,7 +21,9 @@ def rls_db_session():
     Base.metadata.drop_all(bind=engine)
 
 
-@pytest.mark.skipif('sqlite' in settings.DATABASE_URL, reason='RLS is not supported in SQLite')
+@pytest.mark.skipif(
+    "sqlite" in settings.DATABASE_URL, reason="RLS is not supported in SQLite"
+)
 def test_tenant_data_isolation(rls_db_session):
     # Injeta perfil público no banco (sem RLS)
     profile = CargoProfile(

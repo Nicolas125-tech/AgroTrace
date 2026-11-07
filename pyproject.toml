@@ -16,6 +16,7 @@ dependencies = [
     "uvicorn>=0.52.4",
     "passlib[bcrypt]>=1.7.4",
     "bcrypt<4.0.0",
+    "slowapi>=0.1.10",
 ]
 
 [tool.ruff.lint]
